@@ -1,0 +1,15 @@
+{
+  "holdings_refresh_seconds": 60,
+  "report_interval_seconds": 3600,
+  "news_lookback_hours": 48,
+  "yahoo_overrides": {},
+  "macro_symbols": ["^GSPC", "^VIX", "^TNX", "DX-Y.NYB", "CL=F", "KRW=X", "^N225", "^HSI"],
+  "fred_series": ["DGS2", "DGS10", "FEDFUNDS", "CPIAUCSL", "UNRATE", "GDPC1"],
+  "macro_feeds": [
+    {"name": "Federal Reserve", "url": "https://www.federalreserve.gov/feeds/press_monetary.xml"},
+    {"name": "ECB", "url": "https://www.ecb.europa.eu/rss/press.html"},
+    {"name": "Bank of Korea 정책", "url": "https://www.bok.or.kr/portal/bbs/P0000559/news.rss?menuNo=200690"},
+    {"name": "Bank of Korea 통계", "url": "https://www.bok.or.kr/portal/bbs/B0000501/news.rss?menuNo=201264"},
+    {"name": "Bank of Japan", "url": "https://www.boj.or.jp/en/rss/whatsnew.xml"}
+  ]
+}
