@@ -70,7 +70,12 @@ PROMPTS = {
 금리·물가·고용·성장·유동성·환율·원자재·정책/지정학을 수집 범위 안에서 검토한다.
 정책금리와 국채금리를 구분한다. 금리 하락 원인이 물가 안정인지 경기 악화인지 반대 설명을 검토한다.
 성장주·가치주·수출주·경기민감 업종 등 일반적인 전달 경로를 설명한다.
-부족한 국가·지표·뉴스 범위를 명시한다. 이 단계의 conflicts는 빈 배열로 둔다.''',
+부족한 국가·지표·뉴스 범위를 명시한다. 이 단계의 conflicts는 빈 배열로 둔다.
+거시 findings는 중요도 순으로 최대 6개만 작성한다.
+모든 finding에는 subject, claim, kind, evidence_ids,
+confidence, counterpoint, revisit_when을 반드시 포함한다.
+conflicts는 반드시 빈 배열 []로 반환한다.
+JSON 이외의 설명이나 마크다운은 출력하지 않는다.''',
     'synthesis': '''너는 에이전트 3, 최종 리서치 편집자다.
 에이전트 1과 2의 독립 결과를 원자료 evidence와 함께 검토한다.
 둘의 일치가 진실의 증거는 아니다. 동일한 모델/출처의 편향이 공유될 수 있다.
@@ -160,7 +165,9 @@ class Model:
             if not 512 <= num_predict <= 8000 or not 8192 <= num_ctx <= 131072:
                 raise ValueError('OLLAMA_NUM_PREDICT / OLLAMA_NUM_CTX 설정 범위를 확인하세요.')
             started = time.monotonic()
-            response = request('http://127.0.0.1:11434/api/chat', timeout=240,
+            response = request(
+    'http://127.0.0.1:11434/api/chat',
+    timeout=int(os.environ.get('OLLAMA_TIMEOUT', '1800')),
                                body={'model': self.model, 'stream': False,
                                      'think': think, 'keep_alive': '30m',
                                      'options': {'num_predict': num_predict, 'num_ctx': num_ctx,
@@ -199,13 +206,29 @@ def failure(reason):
 def safe_analyze(model, role, payload):
     if not payload['sources']:
         return failure('분석할 출처가 없습니다.')
+
     try:
         analyzed_report = model.analyze(role, payload)
-        return {'status': 'ok', 'report': to_dict(analyzed_report)}
+        return {
+            'status': 'ok',
+            'report': to_dict(analyzed_report)
+        }
+
     except Exception as exc:
-        return failure('모델 호출/출력 검증 실패: ' + type(exc).__name__)
+        detail = str(exc).replace('\n', ' ')[:1000]
 
+        print(
+            f'  - {role} 에이전트 실패: '
+            f'{type(exc).__name__}: {detail}',
+            flush=True
+        )
 
+        return failure(
+            '모델 호출/출력 검증 실패: '
+            + type(exc).__name__
+            + ' · '
+            + detail
+        )
 def run_agents(model, snapshot, portfolio, macro):
     positions = analysis_positions(snapshot)
     portfolio_payload = {**portfolio, 'positions': positions,

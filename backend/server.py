@@ -46,7 +46,7 @@ async def boundary(request: Request, call_next):
         if MODE != 'local':
             return JSONResponse({'error':'공개 시연에서는 실제 자료 API를 사용할 수 없습니다.'}, status_code=403)
         try:
-            local_client = ipaddress.ip_address(request.client.host).is_loopback
+            local_client = bool(request.client and ipaddress.ip_address(request.client.host).is_loopback)
         except (ValueError, AttributeError):
             local_client = False
         if not local_client or request.url.hostname not in ('localhost', '127.0.0.1', '::1'):
@@ -91,7 +91,7 @@ def snapshot(raw):
     for p in raw['positions']:
         if p['currency'] not in ('USD','KRW'):
             raise ValueError('currency')
-        row = {k:str(p.get(k,'')) for k in ('symbol','name','market','currency','price_quality','price_source')}
+        row: dict[str, object] = {k:str(p.get(k,'')) for k in ('symbol','name','market','currency','price_quality','price_source')}
         row.update(quantity=numeric(p['quantity']), price=numeric(p['price']),
                    value_krw=numeric(p.get('value_krw',p.get('val_krw'))),
                    price_at=timestamp(p['price_at']) if p.get('price_at') else None)
