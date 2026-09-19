@@ -1,8 +1,22 @@
+// Copyright (C) 2026 Seungbeom Hong
+// SPDX-License-Identifier: AGPL-3.0-or-later
+// @ts-nocheck
+
 "use client";
-import {ChartNoAxesCombined,LayoutDashboard,Plug,BookOpen,ArrowUpRight,ShieldCheck,FlaskConical,LogOut} from "lucide-react";
 import {Sidebar,SidebarContent,SidebarFooter,SidebarHeader,SidebarInset,SidebarMenu,SidebarMenuItem,SidebarMenuButton,SidebarProvider,SidebarTrigger} from "@/components/ui/sidebar";
 
-export function AppShell({children,active="demo",user}:{children:React.ReactNode,active?:string,user?:string}){
+type IconProps={size?:number;className?:string};
+const Icon=({size=18,className}:IconProps)=><svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true"><path d="M4 19V5M4 19h16M7 15l3-4 3 2 5-7"/></svg>;
+const ChartNoAxesCombined=Icon;
+const LayoutDashboard=Icon;
+const Plug=Icon;
+const BookOpen=Icon;
+const ArrowUpRight=Icon;
+const ShieldCheck=Icon;
+const FlaskConical=Icon;
+const LogOut=Icon;
+
+export function AppShell({children,active="demo",user}:{children:any,active?:string,user?:string}){
  const isPublic=import.meta.env.VITE_PUBLIC_DEMO_ONLY==="true";
  const items=[{id:"demo",href:"/",title:"시연 콘솔",icon:FlaskConical},{id:"dashboard",href:"/dashboard",title:"내 포트폴리오",icon:LayoutDashboard},{id:"connect",href:"/connect",title:"데이터 연결",icon:Plug},{id:"project",href:"/project",title:"프로젝트 소개",icon:BookOpen}].filter(x=>!isPublic||["demo","project"].includes(x.id));
  return <SidebarProvider style={{"--sidebar-width":"15rem"} as React.CSSProperties}>

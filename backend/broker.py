@@ -1,3 +1,5 @@
+# Copyright (C) 2026 Seungbeom Hong
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Toss Securities REST 1.2.17 / WebSocket 1.2.2, checked 2026-09-16.
 Only explicitly listed read operations are exposed; no order API exists here.
 """
@@ -35,6 +37,8 @@ class Toss:
                 body = request(BASE + '/oauth2/token', form=True, body={
                     'grant_type': 'client_credentials', 'client_id': self.client_id,
                     'client_secret': self.secret})
+                if not isinstance(body, dict) or not body.get('access_token'):
+                    raise ValueError('토큰 응답이 올바르지 않습니다.')
                 self._token = body['access_token']
                 self._expires = time.monotonic() + int(body['expires_in'])
             return self._token
@@ -52,6 +56,8 @@ class Toss:
                     headers['X-Tossinvest-Account'] = str(self.account)
                 try:
                     body = request(BASE + path + ('?' + urlencode(params) if params else ''), headers=headers)
+                    if not isinstance(body, dict) or 'result' not in body:
+                        raise ValueError('API 응답에 result가 없습니다.')
                     return body['result']
                 except NetworkError as exc:
                     if exc.status == 401 and attempt == 0:
@@ -63,17 +69,26 @@ class Toss:
 
     def snapshot(self):
         if not self.account:
-            accounts = [x for x in self.get('/api/v1/accounts') if x['accountType'] == 'BROKERAGE']
+            account_result = self.get('/api/v1/accounts')
+            if not isinstance(account_result, list):
+                raise ValueError('계좌 응답이 올바르지 않습니다.')
+            accounts = [x for x in account_result if x['accountType'] == 'BROKERAGE']
             if len(accounts) != 1:
                 raise ValueError('복수 계좌 또는 중개 계좌 없음: TOSS_ACCOUNT_SEQ를 직접 지정하세요.')
             self.account = str(accounts[0]['accountSeq'])
         holdings = self.get('/api/v1/holdings', account=True)
+        if not isinstance(holdings, dict) or not isinstance(holdings.get('items'), list):
+            raise ValueError('보유 종목 응답이 올바르지 않습니다.')
         symbols = [x['symbol'] for x in holdings['items']]
         meta, prices = {}, {}
         for start in range(0, len(symbols), 100):
             params = {'symbols': ','.join(symbols[start:start + 100])}
-            meta.update({x['symbol']: x for x in self.get('/api/v1/stocks', params)})
-            prices.update({x['symbol']: x for x in self.get('/api/v1/prices', params)})
+            stock_items = self.get('/api/v1/stocks', params)
+            price_items = self.get('/api/v1/prices', params)
+            if not isinstance(stock_items, list) or not isinstance(price_items, list):
+                raise ValueError('주식 정보 응답이 올바르지 않습니다.')
+            meta.update({x['symbol']: x for x in stock_items})
+            prices.update({x['symbol']: x for x in price_items})
         fx = None
         if any(x['currency'] == 'USD' for x in holdings['items']):
             fx = self.get('/api/v1/exchange-rate', {'baseCurrency': 'USD', 'quoteCurrency': 'KRW'})
@@ -115,8 +130,11 @@ def value_snapshot(snapshot):
     usdkrw = decimal(fx['midRate']) if fx else None
     if usdkrw is not None and usdkrw <= 0:
         raise ValueError('invalid FX rate')
-    if fx and (not stamp(fx.get('validUntil')) or stamp(fx['validUntil']) < stamp(now())):
-        warnings.append('환율 유효기간 경과 또는 미확인; 원화 환산은 참고치입니다.')
+    if fx:
+        valid_until = stamp(fx.get('validUntil'))
+        current_time = stamp(now())
+        if valid_until is None or (current_time is not None and valid_until < current_time):
+            warnings.append('환율 유효기간 경과 또는 미확인; 원화 환산은 참고치입니다.')
     for p in result['positions']:
         qty, price = decimal(p['quantity']), decimal(p['price'])
         if qty < 0 or price < 0:
@@ -226,7 +244,11 @@ class LiveQuotes:
                                 continue
                             with self._lock:
                                 old = self.prices.get(symbol)
-                                if not old or stamp(tick['timestamp']) >= stamp(old['timestamp']):
+                                tick_stamp = stamp(tick['timestamp'])
+                                old_stamp = stamp(old['timestamp']) if old else None
+                                if (not old or
+                                        (tick_stamp is not None and
+                                         (old_stamp is None or tick_stamp >= old_stamp))):
                                     self.prices[symbol] = tick
             except Exception as exc:
                 # Exception strings may contain headers; expose only class and status.

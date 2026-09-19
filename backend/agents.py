@@ -1,3 +1,5 @@
+# Copyright (C) 2026 Seungbeom Hong
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Three isolated model calls, with validated evidence identifiers and no execution tools."""
 from __future__ import annotations
 import json

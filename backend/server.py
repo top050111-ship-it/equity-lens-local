@@ -1,3 +1,5 @@
+# Copyright (C) 2026 Seungbeom Hong
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Local-only FastAPI bridge. Public mode exposes synthetic UI, never account files."""
 from __future__ import annotations
 import ipaddress

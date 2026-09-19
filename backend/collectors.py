@@ -1,3 +1,5 @@
+# Copyright (C) 2026 Seungbeom Hong
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """Public evidence only. News content is untrusted input, never executable instructions."""
 from __future__ import annotations
 import calendar
@@ -39,7 +41,10 @@ def filter_evidence(items, lookback_hours):
 
 
 def rss(provider, url, limit=12):
-    root = ET.fromstring(request(url, raw=True))
+    payload = request(url, raw=True)
+    if payload is None:
+        raise ValueError('empty RSS response')
+    root = ET.fromstring(payload)
     rows = []
     for entry in root.iter():
         if entry.tag.split('}')[-1] not in ('item', 'entry'):
@@ -99,9 +104,15 @@ def yahoo(symbol, news_count=8):
 
 def fred(series_id, key):
     params = {'series_id': series_id, 'api_key': key, 'file_type': 'json'}
-    meta = request('https://api.stlouisfed.org/fred/series?' + urlencode(params))['seriess'][0]
-    obs = request('https://api.stlouisfed.org/fred/series/observations?' + urlencode({
-        **params, 'sort_order': 'desc', 'limit': 20}))['observations']
+    metadata = request('https://api.stlouisfed.org/fred/series?' + urlencode(params))
+    if not isinstance(metadata, dict) or not metadata.get('seriess'):
+        raise ValueError('no FRED series metadata')
+    meta = metadata['seriess'][0]
+    observations = request('https://api.stlouisfed.org/fred/series/observations?' + urlencode({
+        **params, 'sort_order': 'desc', 'limit': 20}))
+    if not isinstance(observations, dict) or not isinstance(observations.get('observations'), list):
+        raise ValueError('invalid FRED observations response')
+    obs = observations['observations']
     usable = [x for x in obs if x.get('value') not in (None, '.')][:3]
     if not usable:
         raise ValueError('no FRED observations')

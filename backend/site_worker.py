@@ -1,3 +1,5 @@
+# Copyright (C) 2026 Seungbeom Hong
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """One broker token owner. Read-only collection and queued research for Equity Lens."""
 from __future__ import annotations
 import copy
