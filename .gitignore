@@ -1,10 +1,23 @@
+# Local credentials and environment settings
 .env
-.env.local
-**/.venv/
-**/__pycache__/
-**/node_modules/
-**/data/
-**/demo-output/
-**/.run.lock
-**/*.log
-**/.DS_Store
+.env.*
+!.env.example
+!.env.*.example
+
+# Private holdings, account caches, and generated reports
+/backend/data/
+/data/
+/demo-output/
+frozen_portfolio.json*
+last_nonempty_portfolio.json*
+# Local source backups and one-off repair scripts
+*.bak_*
+/fix_attempts.py
+# Local runtime files
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.log
+.run.lock
+.DS_Store

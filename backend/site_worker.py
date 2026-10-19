@@ -12,7 +12,9 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from urllib.parse import urlsplit
 from common import load_env, now, request, write_private
-from broker import Toss, LiveQuotes, value_snapshot
+from broker import LiveQuotes, value_snapshot
+from holdings_cache import CachedToss, HoldingsCacheError
+from research_runtime import ResearchPortfolio, collect_research
 from agents import Model, run_agents
 from collectors import portfolio_bundle, macro_bundle
 from app import save_report, render_snapshot
@@ -21,10 +23,7 @@ ROOT = Path(__file__).resolve().parent
 
 
 def collect_analysis(model, snapshot, config, output):
-    with ThreadPoolExecutor(max_workers=2) as pool:
-        company = pool.submit(portfolio_bundle, snapshot, config)
-        macro = pool.submit(macro_bundle, config)
-        result = run_agents(model, snapshot, company.result(), macro.result())
+    result = collect_research(model, snapshot, config)
     save_report(result, snapshot, output)
     return result
 
@@ -32,6 +31,7 @@ def collect_analysis(model, snapshot, config, output):
 def site_packet(snapshot):
     # Deliberately omit cost basis, broker metadata, FX raw responses and identifiers.
     return {**{k: snapshot[k] for k in ('as_of', 'valuation_at', 'calculated_equity_value_krw', 'warnings')},
+            'scope': snapshot.get('scope', ''),
             'stream_status': snapshot.get('stream_status', 'REST 조회'),
             'positions': [{k: p.get(k) for k in ('symbol', 'name', 'market', 'currency', 'quantity',
                            'price', 'price_at', 'price_quality', 'price_source', 'value_krw')}
@@ -46,13 +46,26 @@ def run(config):
     if not token.startswith('el_') or len(token) != 67:
         raise ValueError('사이트 데이터 연결 화면에서 발급한 토큰이 필요합니다.')
     endpoint = parsed.geturl().rstrip('/') + '/api/ingest'
-    model, broker = Model(), Toss()
-    output = ROOT / 'data'
-    output.mkdir(mode=0o700, exist_ok=True)
-    snapshot = broker.snapshot()  # A failed lookup never produces a zero balance.
-    quotes = LiveQuotes(broker)
-    quotes.update_targets(snapshot)
-    quotes.start()
+    output = Path(os.getenv('EQUITY_DATA_DIR') or ROOT / 'data').expanduser().resolve()
+    output.mkdir(parents=True, mode=0o700, exist_ok=True)
+    mode = os.getenv('EQUITY_HOLDINGS_MODE', 'live')
+    if mode == 'cached':
+        broker = ResearchPortfolio(output, config, path=os.getenv('EQUITY_RESEARCH_FILE'))
+    elif mode == 'live':
+        broker = CachedToss(output / 'last_nonempty_portfolio.json')
+    else:
+        raise ValueError('EQUITY_HOLDINGS_MODE must be live or cached')
+    snapshot = broker.snapshot()
+    model = Model()
+    quotes = None
+    if mode == 'live' and os.getenv('EQUITY_STREAM', 'true').lower() == 'true':
+        candidate = LiveQuotes(broker)
+        try:
+            candidate.update_targets(snapshot)
+            candidate.start()
+            quotes = candidate
+        except ImportError:
+            snapshot.setdefault('snapshot_warnings', []).append('WebSocket 의존성 없음; REST로 계속합니다.')
     future, job_id = None, None
     next_holdings, next_report = time.monotonic() + config['holdings_refresh_seconds'], 0
     pending: dict[str, object] = {}
@@ -64,12 +77,13 @@ def run(config):
                 if current >= next_holdings:
                     try:
                         snapshot = broker.snapshot()
-                        quotes.update_targets(snapshot)
+                        if quotes:
+                            quotes.update_targets(snapshot)
                     except Exception as exc:
                         snapshot['refresh_error'] = type(exc).__name__
                         print('보유 수량 갱신 실패:', type(exc).__name__, flush=True)
                     next_holdings = time.monotonic() + config['holdings_refresh_seconds']
-                valued = value_snapshot(quotes.overlay(snapshot))
+                valued = value_snapshot(quotes.overlay(snapshot) if quotes else snapshot)
                 if snapshot.get('refresh_error'):
                     valued['warnings'].append('보유 수량 갱신 실패; 이전 기준 자료입니다. 새 분석을 보류합니다.')
                 write_private(output / 'latest_portfolio.json', valued)
@@ -105,7 +119,8 @@ def run(config):
                     print('사이트 전송 실패:', type(exc).__name__, '접근 설정과 연결 토큰을 확인하세요.', flush=True)
                 time.sleep(min(60, 10 * max(1, min(failures, 6))))
     finally:
-        quotes.stop.set()
+        if quotes:
+            quotes.stop.set()
 
 
 def main():
@@ -125,5 +140,5 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         print('수집기를 종료했습니다.')
     except Exception as exc:
-        print('수집기 시작 실패:', type(exc).__name__, 'SETUP.md의 설정을 확인하세요.', file=sys.stderr)
+        print('수집기 시작 실패:', str(exc) if isinstance(exc, HoldingsCacheError) else type(exc).__name__, file=sys.stderr)
         sys.exit(1)

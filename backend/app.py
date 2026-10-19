@@ -7,16 +7,27 @@ import json
 import os
 import sys
 import time
+import subprocess
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
+from importlib import import_module
 from pathlib import Path
 from zoneinfo import ZoneInfo
-from common import now, write_private, load_env, evidence, decimal
-from broker import Toss, LiveQuotes, value_snapshot
-from collectors import portfolio_bundle, macro_bundle
-from agents import Model, Report, Finding, Conflict, run_agents, validate_references
 
 ROOT = Path(__file__).resolve().parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from common import now, write_private, load_env, evidence, decimal
+from broker import LiveQuotes, value_snapshot
+from holdings_cache import CachedToss, HoldingsCacheError
+from collectors import portfolio_bundle, macro_bundle
+from agents import (Model, Report, Finding, Conflict, run_agents, validate_references,
+                    EvidenceReview, ReviewDecision, EvidenceQuote)
+
+_research_runtime = import_module('research_runtime')
+ResearchPortfolio = _research_runtime.ResearchPortfolio
+collect_research = _research_runtime.collect_research
 
 
 def md(value):
@@ -25,7 +36,7 @@ def md(value):
 
 def render_snapshot(snapshot, demo=False):
     lines = ['# ' + ('[가상 샘플] ' if demo else '') + '포트폴리오 현황', '',
-             '보유 수량 조회: ' + snapshot['as_of'],
+             '보유 내역 기준: ' + snapshot['as_of'],
              '평가 갱신: ' + snapshot['valuation_at'], '', snapshot['scope'], '',
              '주식 평가액 참고치: ' + f"{decimal(snapshot['calculated_equity_value_krw']):,.0f}" + ' KRW',
              '환율: USD/KRW 매매기준율 적용. 수수료·세금·현금 제외.',
@@ -44,12 +55,15 @@ def render_report(result, snapshot, demo=False):
              '작성: ' + result['created_at'],
              '포트폴리오 기준: ' + snapshot['as_of'], '',
              '**실제 투자 판단에 사용하는 보고서가 아닌 기능 시연입니다.**' if demo else
-             '**자동 생성 초안입니다. 출처 ID 검증은 주장의 사실성 검증을 보장하지 않습니다.**', '',
-             '분석 단계: ' + ('3단계 완료' if result['complete'] else '일부 단계 실패 — 불완전한 보고서'),
+             '**자동 생성 초안입니다. 원문 구절 대조·의미 검토를 거쳤어도 주장의 사실성을 보장하지 않습니다.**', '',
+             '분석 단계: ' + ('3단계 분석 및 근거 검토 완료' if result['complete'] else '일부 단계 실패 — 불완전한 보고서'),
              '주식 내 비중 기준이며 현금·채권·옵션을 포함한 전체 자산 배분이 아닙니다.', '',
              '| 종목 | 주식 내 비중 | 시세 상태 |', '|---|---:|---|']
     for p in snapshot['positions']:
         lines.append(f"| {md(p['symbol'])} | {p['weight_pct']:.2f}% | {md(p['price_quality'])} |")
+    if snapshot.get('holdings_source') in ('cached', 'research'):
+        lines += ['', '**저장된 과거 보유 수량으로 분석한 가정 포트폴리오입니다. 현재 토스 잔고가 아닙니다.**',
+                  '계좌 확인 시각: ' + md(snapshot.get('account_checked_at') or '계좌 조회 생략 · 저장 자료 연구 모드')]
     if result['warnings']:
         lines += ['', '## 수집 범위와 누락', '', *('- ' + md(w) for w in result['warnings'])]
     labels = {'synthesis': '최종 종합 분석', 'portfolio': '에이전트 1 · 기업/포트폴리오', 'macro': '에이전트 2 · 독립 거시 분석'}
@@ -60,7 +74,7 @@ def render_report(result, snapshot, demo=False):
         lines += ['', '## ' + labels[key], '', '**상태: ' + stage['status'] + '**', '', md(report['summary'])]
         for f in report['findings']:
             lines += ['', '### ' + md(f['subject']), '',
-                      f"{kinds[f['kind']]} · 근거 신뢰도 {f['confidence']} · 출처 {', '.join(f['evidence_ids'])}", '',
+                      f"{kinds[f['kind']]} · 분석 신뢰도(모델 평가) {f['confidence']} · 출처 {', '.join(f['evidence_ids'])}", '',
                       md(f['claim']), '', '- 반대 설명: ' + md(f['counterpoint']),
                       '- 재검토 조건: ' + md(f['revisit_when'])]
         if report['conflicts']:
@@ -85,6 +99,12 @@ def render_report(result, snapshot, demo=False):
 def save_report(result, snapshot, output, demo=False):
     stamp_str = datetime.now(ZoneInfo('Asia/Seoul')).strftime('%Y%m%d_%H%M%S_%f')
     filename = ('DEMO_' if demo else '') + stamp_str
+    result['run_id'] = os.getenv('EQUITY_RUN_ID', '')
+    result['portfolio_context'] = {
+        'holdings_source': snapshot.get('holdings_source', 'demo' if demo else 'live'),
+        'holdings_as_of': snapshot['as_of'],
+        'account_checked_at': snapshot.get('account_checked_at'),
+        'fallback_reason': snapshot.get('fallback_reason')}
     write_private(output / 'reports' / (filename + '.json'), result)
     text = render_report(result, snapshot, demo)
     write_private(output / 'reports' / (filename + '.md'), text)
@@ -95,18 +115,11 @@ def save_report(result, snapshot, output, demo=False):
 
 
 def analyze_cycle(model, snapshot, config, output):
-    print("\n[1/3] 📡 포트폴리오 및 글로벌 거시 뉴스 데이터 수집 중...", flush=True)
-    with ThreadPoolExecutor(max_workers=2) as pool:
-        p = pool.submit(portfolio_bundle, snapshot, config)
-        m = pool.submit(macro_bundle, config)
-        portfolio, macro = p.result(), m.result()
-    
-    print("[2/3] 🤖 설정한 모델로 에이전트 1·2·3 분석을 진행 중입니다...", flush=True)
-    result = run_agents(model, snapshot, portfolio, macro)
-    result['model'] = dict(backend=model.backend, model=model.model)
-    
-    print("[3/3] 💾 리서치 보고서 생성 및 저장 완료!", flush=True)
-    return save_report(result, snapshot, output)
+    print('뉴스 수집 · 분석 · 근거 검토를 실행합니다.', flush=True)
+    result = collect_research(model, snapshot, config)
+    path = save_report(result, snapshot, output)
+    print('보고서 저장 완료:', 'complete' if result['complete'] else 'partial', flush=True)
+    return path
 
 
 class DemoModel:
@@ -118,7 +131,7 @@ class DemoModel:
             'macro': ('가상의 금리 상승 환경에서 할인율과 자금 조달 비용의 영향을 검토합니다.',
                       '거시 분석 예시', '금리 상승을 가정하면 장기 성장 기대에 의존하는 기업의 가치평가에 부담이 될 수 있습니다.'),
             'synthesis': ('사업 호재와 금리 부담이 동시에 존재할 수 있습니다. 현금흐름 개선 여부를 먼저 확인합니다.',
-                          '종합 판단 예시', '가상 수주 호재만으로 금리 영향을 상쇄한다고 단정할 수 없습니다.')}
+                          '종합 판단 예시', '[DEMO-US] 가상 수주 증가 → 가상 금리 상승 → 이익 기대와 할인율 부담의 상충: 단기 가치평가 부담과 중기 현금흐름 개선 가능성을 함께 확인합니다.')}
         summary, subject, claim = content[role]
         report = Report(summary=summary, findings=[Finding(subject=subject, claim=claim,
                         kind='scenario', evidence_ids=ids[:2], confidence='low',
@@ -130,6 +143,19 @@ class DemoModel:
                         watchlist=['실제 데이터와 분석 모델 연결 후 검증'],
                         limitations=['가상 자료와 미리 작성한 출력입니다. AI 분석을 실행하지 않았습니다.'])
         return validate_references(report, payload['sources'])
+
+
+    def review(self, role, payload):
+        # Fixed demonstration fixtures only. This is NOT semantic AI validation.
+        if any(s.get('provider') != '가상 자료' for s in payload['sources']):
+            raise ValueError('데모 검토기는 가상 자료에만 사용할 수 있습니다.')
+        sources = {s['id']: s for s in payload['sources']}
+        return EvidenceReview(decisions=[ReviewDecision(
+            item_id=item['item_id'], supported=True,
+            portfolio_linked=(role == 'synthesis'), duplicate_of='',
+            reason='고정 가상 시연 판정이며 실제 의미 검증을 실행하지 않았습니다.',
+            quotes=[EvidenceQuote(evidence_id=eid, field='title', quote=sources[eid]['title'])
+                    for eid in item['evidence_ids']]) for item in payload['items']])
 
 
 def demo(output):
@@ -144,19 +170,57 @@ def demo(output):
                  '실제 뉴스가 아닌 기능 시연용 가정', now())
     b = evidence('가상 자료', '가상 금리 상승 가정', 'https://example.com/demo-macro',
                  '실제 경제지표가 아닌 기능 시연용 가정', now())
+    snapshot['holdings_source'] = 'demo'
     result = run_agents(DemoModel(), snapshot, {'sources': [a], 'warnings': []}, {'sources': [b], 'warnings': []})
     write_private(output / 'latest_portfolio.json', snapshot)
     write_private(output / 'latest_portfolio.md', render_snapshot(snapshot, True))
     print(save_report(result, snapshot, output, demo=True))
 
 
-def live(config, output, watch, stream):
-    broker, model = Toss(), Model()
+def live(config, output, watch, stream, *, snapshot_only=False,
+         simulate_empty=False, import_holdings=None, source_mode='live',
+         holdings=None, skip_price_refresh=False, freeze_holdings=False, replace_frozen=False):
+    output = Path(output)
+    output.mkdir(parents=True, exist_ok=True, mode=0o700)
+    if source_mode == 'cached':
+        if stream:
+            raise ValueError('cached 모드에는 --stream을 사용하지 않습니다.')
+        broker = ResearchPortfolio(output, config, path=holdings, refresh=not skip_price_refresh)
+    else:
+        broker = CachedToss(output / 'last_nonempty_portfolio.json', simulate_empty=simulate_empty)
+        if import_holdings:
+            broker.import_snapshot(import_holdings)
     snapshot = broker.snapshot()
-    quotes = LiveQuotes(broker) if stream else None
-    if quotes:
-        quotes.update_targets(snapshot)
-        quotes.start()
+    if freeze_holdings:
+        if snapshot.get('holdings_source') != 'live':
+            raise HoldingsCacheError('고정 보관은 실제 보유 종목 조회 성공 후 실행하세요. 과거 백업은 cached --holdings로 사용할 수 있습니다.')
+        freeze = getattr(broker, 'freeze', None)
+        if not callable(freeze):
+            raise HoldingsCacheError('현재 보유 조회 방식은 고정 보관을 지원하지 않습니다.')
+        print('이관 전 고정 보관:', freeze(replace=replace_frozen), flush=True)
+    valued = value_snapshot(snapshot)
+    write_private(output / 'latest_portfolio.json', valued)
+    write_private(output / 'latest_portfolio.md', render_snapshot(valued))
+    if snapshot_only:
+        positions = snapshot.get('positions')
+        position_count = len(positions) if isinstance(positions, list) else 0
+        print('보유 내역 확인 완료:', position_count, '종목 · 자료:', snapshot.get('holdings_source'), flush=True)
+        print('보유 수량 기준:', snapshot['as_of'], flush=True)
+        return
+    model = Model()
+    quotes = None
+    if stream:
+        candidate = LiveQuotes(broker)
+        try:
+            candidate.update_targets(snapshot)
+            candidate.start()
+            quotes = candidate
+        except ImportError:
+            warnings = snapshot.get('snapshot_warnings')
+            if not isinstance(warnings, list):
+                warnings = []
+                snapshot['snapshot_warnings'] = warnings
+            warnings.append('WebSocket 의존성 없음; REST 갱신으로 계속합니다.')
     next_holdings, next_report = time.monotonic() + config['holdings_refresh_seconds'], 0
     future = None
     try:
@@ -168,7 +232,8 @@ def live(config, output, watch, stream):
                         snapshot = broker.snapshot()
                         if quotes:
                             quotes.update_targets(snapshot)
-                        write_private(output / 'collection_status.json', {'status': 'ok', 'at': now()})
+                        write_private(output / 'collection_status.json', {
+                            'status': 'ok' if snapshot.get('holdings_source') == 'live' else 'historical', 'at': now()})
                     except Exception as exc:
                         snapshot = copy.deepcopy(snapshot)
                         snapshot['refresh_error'] = type(exc).__name__
@@ -176,7 +241,7 @@ def live(config, output, watch, stream):
                     next_holdings = time.monotonic() + config['holdings_refresh_seconds']
                 valued = value_snapshot(quotes.overlay(snapshot) if quotes else snapshot)
                 if snapshot.get('refresh_error'):
-                    valued['warnings'].append('보유 수량 갱신 실패; 이전 수량 기준. 새 분석 실행을 보류합니다.')
+                    valued['warnings'].append('조회 갱신 실패; 새 분석 보류. 저장 포트폴리오 연구는 cached 모드로 실행할 수 있습니다.')
                 write_private(output / 'latest_portfolio.json', valued)
                 write_private(output / 'latest_portfolio.md', render_snapshot(valued))
                 if future and future.done():
@@ -184,17 +249,15 @@ def live(config, output, watch, stream):
                         print('보고서:', future.result(), flush=True)
                     except Exception as exc:
                         write_private(output / 'analysis_status.json', {'status': 'failed', 'at': now(), 'error': type(exc).__name__})
-                        print('분석 실패:', type(exc).__name__, flush=True)
                     future = None
                 if current >= next_report and future is None and not snapshot.get('refresh_error'):
-                    frozen = copy.deepcopy(valued)
-                    future = pool.submit(analyze_cycle, model, frozen, config, output)
+                    future = pool.submit(analyze_cycle, model, copy.deepcopy(valued), config, output)
                     next_report = time.monotonic() + config['report_interval_seconds']
                 if not watch:
                     if future:
                         print('보고서:', future.result(), flush=True)
                     break
-                time.sleep(2 if stream else min(10, config['holdings_refresh_seconds']))
+                time.sleep(2 if quotes else min(10, config['holdings_refresh_seconds']))
     finally:
         if quotes:
             quotes.stop.set()
@@ -202,15 +265,31 @@ def live(config, output, watch, stream):
 
 def main():
     parser = argparse.ArgumentParser(description='세 에이전트 투자 리서치: demo 또는 live')
-    parser.add_argument('mode', choices=['demo', 'live'])
+    parser.add_argument('mode', choices=['demo', 'live', 'cached', 'selftest'])
     parser.add_argument('--watch', action='store_true', help='프로세스가 실행되는 동안 반복')
     parser.add_argument('--stream', action='store_true', help='토스 WebSocket 시세 수신')
+    parser.add_argument('--snapshot-only', action='store_true', help='실제 계좌 조회와 캐시 저장만 실행; AI 미호출')
+    parser.add_argument('--simulate-empty-holdings', action='store_true', help='실제 조회 후 빈 계좌처럼 캐시 분석 경로 테스트')
+    parser.add_argument('--import-holdings', default=None, help='명시적으로 선택한 과거 latest_portfolio.json을 현재 계좌 캐시로 등록')
+    parser.add_argument('--holdings', help='cached 모드의 원본 포트폴리오 또는 캐시 JSON')
+    parser.add_argument('--skip-price-refresh', action='store_true', help='cached 모드의 공개 시세 갱신 생략')
+    parser.add_argument('--freeze-holdings', action='store_true', help='이관 전 전체 포트폴리오를 덮어쓰기 없는 별도 파일로 보관')
+    parser.add_argument('--replace-frozen', action='store_true', help='고정 보관본을 의도적으로 갱신')
     parser.add_argument('--config', default=str(ROOT / 'config.json'))
     parser.add_argument('--output', default=None)
     args = parser.parse_args()
     os.umask(0o077)
     load_env(ROOT / '.env')
-    output = Path(args.output or ROOT / ('demo-output' if args.mode == 'demo' else 'data')).resolve()
+    if args.mode == 'selftest':
+        raise SystemExit(subprocess.call([sys.executable, str(ROOT / 'doctor.py'), '--tests'], cwd=ROOT))
+    if args.replace_frozen and not args.freeze_holdings:
+        parser.error('--replace-frozen에는 --freeze-holdings가 필요합니다.')
+    if args.mode != 'live' and (args.import_holdings or args.freeze_holdings or args.simulate_empty_holdings):
+        parser.error('계좌 가져오기/고정/빈 계좌 재현 옵션은 live 모드에서 사용하세요.')
+    if args.mode != 'cached' and (args.holdings or args.skip_price_refresh):
+        parser.error('--holdings와 --skip-price-refresh는 cached 모드에서 사용하세요.')
+    output = Path(args.output or (ROOT / 'demo-output' if args.mode == 'demo' else
+                  os.getenv('EQUITY_DATA_DIR') or ROOT / 'data')).expanduser().resolve()
     if args.mode == 'demo':
         demo(output)
         return
@@ -225,7 +304,10 @@ def main():
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
             raise ValueError('이 프로젝트가 이미 실행 중입니다.') from None
-        live(config, output, args.watch, args.stream)
+        live(config, output, args.watch, args.stream, snapshot_only=args.snapshot_only,
+             simulate_empty=args.simulate_empty_holdings, import_holdings=args.import_holdings,
+             source_mode=args.mode, holdings=args.holdings or os.getenv('EQUITY_RESEARCH_FILE'), skip_price_refresh=args.skip_price_refresh,
+             freeze_holdings=args.freeze_holdings, replace_frozen=args.replace_frozen)
 
 
 if __name__ == '__main__':
@@ -234,5 +316,8 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         print('종료했습니다.')
     except Exception as exc:
-        print('실행 실패:', type(exc).__name__, '설정·인증서·허용 IP·모델 연결을 확인하세요.', file=sys.stderr)
+        if isinstance(exc, HoldingsCacheError):
+            print('실행 실패:', str(exc), file=sys.stderr)
+        else:
+            print('실행 실패:', type(exc).__name__, '설정·인증서·허용 IP·모델 연결을 확인하세요.', file=sys.stderr)
         sys.exit(1)

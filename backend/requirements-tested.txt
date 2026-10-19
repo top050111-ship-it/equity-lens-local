@@ -1,0 +1,10 @@
+# 검증 환경의 직접 의존성 버전 기록; OS별 전체 잠금 파일은 아닙니다.
+pydantic==2.14.0
+yfinance==1.7.0
+websockets==16.0
+certifi==2026.10.18
+fastapi==0.148.0
+uvicorn==0.54.0
+tzdata==2026.5
+httpx==0.28.1
+starlette==1.9.0

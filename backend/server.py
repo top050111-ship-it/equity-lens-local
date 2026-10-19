@@ -17,6 +17,7 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 from common import load_env, now, write_private
 from agents import Report
+from holdings_cache import research_file, read_snapshot_file, HoldingsCacheError
 
 ROOT = Path(__file__).resolve().parent
 load_env(ROOT / '.env')
@@ -86,7 +87,11 @@ def timestamp(v):
 
 
 def snapshot(raw):
-    result = {k:raw[k] for k in ('scope','stream_status') if k in raw}
+    if not isinstance(raw, dict):
+        raise ValueError('snapshot must be object')
+    result = {k:raw[k] for k in ('scope','stream_status','holdings_source','fallback_reason') if k in raw}
+    if raw.get('account_checked_at') is not None:
+        result['account_checked_at'] = timestamp(raw['account_checked_at'])
     result.update(as_of=timestamp(raw['as_of']), valuation_at=timestamp(raw.get('valuation_at', raw['as_of'])),
                   calculated_equity_value_krw=numeric(raw['calculated_equity_value_krw']), warnings=raw.get('warnings', []))
     positions = []
@@ -117,7 +122,7 @@ def report(raw):
         u=urlsplit(s['url'])
         if u.scheme not in ('http','https') or not u.hostname or u.username or u.password:
             raise ValueError('unsafe source link')
-        sources.append({k:s[k] for k in ('id','provider','title','content','url','kind','observed_at','retrieved_at','quality') if k in s})
+        sources.append({k:s[k] for k in ('id','provider','title','content','url','kind','observed_at','retrieved_at','quality','content_scope','symbols') if k in s})
     ids={s['id'] for s in sources}
     if len(ids)!=len(sources) or len(sources)>500:
         raise ValueError('source IDs')
@@ -130,9 +135,18 @@ def report(raw):
             if not f['evidence_ids'] or any(i not in ids for i in f['evidence_ids']):
                 raise ValueError('missing evidence ID')
         result[key]={'status':stage['status'],'report':parsed}
+        audit = stage.get('quality_audit')
+        if isinstance(audit, list) and len(audit) <= 12:
+            result[key]['quality_audit'] = audit
     if result['complete'] and any(result[k]['status']!='ok' for k in ('portfolio','macro','synthesis')):
         raise ValueError('inconsistent completion')
     result['sources']=sources
+    for field in ('portfolio_context', 'model'):
+        if isinstance(raw.get(field), dict):
+            allowed = ('holdings_source','holdings_as_of','account_checked_at','fallback_reason') if field == 'portfolio_context' else ('backend','model')
+            result[field] = {k: raw[field][k] for k in allowed if k in raw[field]}
+    if isinstance(raw.get('run_id'), str):
+        result['run_id'] = raw['run_id'][:100]
     return result
 
 
@@ -145,7 +159,7 @@ def read_json(path):
 def current_workspace():
     sfile=DATA/'latest_portfolio.json'
     candidates=list((DATA/'reports').glob('*.json'))
-    rfile=max(candidates,key=lambda p:p.name) if candidates else None
+    rfile=max(candidates,key=lambda p:p.stat().st_mtime_ns) if candidates else None
     status=DATA/'analysis_status.json'
     if status.exists():
         name=read_json(status).get('report')
@@ -159,7 +173,7 @@ def current_workspace():
     try:
         s=snapshot(read_json(sfile)) if sfile.exists() else None
         r=report(read_json(rfile)) if rfile else None
-    except (ValueError, KeyError, TypeError, OSError):
+    except (ValueError, KeyError, TypeError, AttributeError, OSError):
         fail('자료 형식을 확인하세요. 상태 파일 대신 reports 폴더의 보고서 JSON을 사용하세요.',422)
     times=[p.stat().st_mtime for p in (sfile,rfile) if p and p.exists()]
     return dict(snapshot=s, report=r, updated_at=datetime.fromtimestamp(max(times)).astimezone().isoformat() if times else None,
@@ -210,27 +224,48 @@ async def import_workspace(request: Request):
 
 def run_job(current):
     try:
-        result=subprocess.run([sys.executable,str(ROOT/'app.py'),'live','--output',str(DATA)],cwd=ROOT,timeout=3600)
-        state=current_workspace().get('report')
-        current['status']='complete' if result.returncode==0 and state and state['complete'] else 'partial' if result.returncode==0 else 'failed'
+        run_env = {**os.environ, 'EQUITY_RUN_ID': current['id']}
+        mode = current['mode']
+        timeout = int(os.getenv('EQUITY_JOB_TIMEOUT', '7200'))
+        if not 120 <= timeout <= 21600:
+            raise ValueError('invalid job timeout')
+        result = subprocess.run([sys.executable, str(ROOT/'app.py'), mode, '--output', str(DATA)],
+                                cwd=ROOT, env=run_env, timeout=timeout)
+        status = read_json(DATA/'analysis_status.json')
+        name = status.get('report')
+        if not isinstance(name, str) or Path(name).name != name:
+            raise ValueError('no report created')
+        state = report(read_json(DATA/'reports'/Path(name).with_suffix('.json')))
+        if state.get('run_id') != current['id']:
+            raise ValueError('report belongs to a previous run')
+        current['status'] = 'complete' if result.returncode == 0 and state['complete'] else 'partial' if result.returncode == 0 else 'failed'
         if result.returncode:
-            current['error']='분석 실패: VS Code 터미널과 .env 설정을 확인하세요.'
-    except Exception:
-        current.update(status='failed',error='실행 실패 또는 60분 제한 초과. 터미널을 확인하세요.')
+            current['error'] = '분석 프로세스 실패. 터미널을 확인하세요.'
+    except Exception as exc:
+        current.update(status='failed', error='새 보고서 생성 실패 (' + type(exc).__name__ + '). 터미널과 진단 결과를 확인하세요.')
     finally:
-        current['updated_at']=now()
+        current['updated_at'] = now()
 
 
-@api.post('/api/jobs',status_code=202)
+@api.post('/api/jobs', status_code=202)
 def analyze():
     global job
     with job_lock:
-        if job and job['status']=='running':
-            fail('이미 분석 중입니다.',409)
-        if not all(os.getenv(k) for k in ('TOSS_CLIENT_ID','TOSS_CLIENT_SECRET','LLM_MODEL')):
-            fail('backend/.env에 토스 인증정보와 LLM_MODEL을 설정하고 서버를 다시 실행하세요.',409)
-        job=dict(id=uuid.uuid4().hex,status='running',created_at=now(),updated_at=now(),error=None)
-        threading.Thread(target=run_job,args=(job,),daemon=True).start()
+        if job and job['status'] == 'running':
+            fail('이미 분석 중입니다.', 409)
+        mode = os.getenv('EQUITY_HOLDINGS_MODE', 'live')
+        if mode not in ('live', 'cached'):
+            fail('EQUITY_HOLDINGS_MODE는 live 또는 cached여야 합니다.', 409)
+        required = ['LLM_MODEL'] + (['TOSS_CLIENT_ID', 'TOSS_CLIENT_SECRET'] if mode == 'live' else [])
+        if not all(os.getenv(k) for k in required):
+            fail('해당 모드의 인증정보와 LLM_MODEL을 설정하세요. cached 모드에는 토스 인증이 필요 없습니다.', 409)
+        if mode == 'cached':
+            try:
+                read_snapshot_file(research_file(DATA, os.getenv('EQUITY_RESEARCH_FILE')))
+            except HoldingsCacheError:
+                fail('cached 모드에서 사용할 고정 보관본 또는 정상 캐시를 준비하세요.', 409)
+        job = dict(id=uuid.uuid4().hex, mode=mode, status='running', created_at=now(), updated_at=now(), error=None)
+        threading.Thread(target=run_job, args=(job,), daemon=True).start()
         return job
 
 

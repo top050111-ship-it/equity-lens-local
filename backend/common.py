@@ -6,6 +6,8 @@ import json
 import os
 import re
 import ssl
+import tempfile
+import shlex
 try:
     import certifi
 except ImportError:
@@ -51,7 +53,12 @@ def freshness(value, seconds=900):
 
 
 def decimal(value):
-    result = Decimal(str(value))
+    if isinstance(value, bool):
+        raise ValueError('boolean is not a number')
+    try:
+        result = Decimal(str(value))
+    except Exception as exc:
+        raise ValueError('invalid decimal value') from exc
     if not result.is_finite():
         raise ValueError('non-finite number')
     return result
@@ -71,7 +78,7 @@ def canonical_url(value):
 
 def evidence(provider, title, url, content, observed_at=None, kind='news', **extra):
     url = canonical_url(url)
-    identity = url + (str(observed_at) + str(content) if kind in ('quote', 'indicator') else '')
+    identity = json.dumps([url, kind, plain(title, 240), plain(content, 1600), observed_at], ensure_ascii=False, sort_keys=True)
     return dict(id='E' + hashlib.sha256(identity.encode()).hexdigest()[:12],
                 provider=provider, title=plain(title, 240), url=url,
                 content=plain(content, 1600), observed_at=observed_at,
@@ -89,7 +96,7 @@ class NoRedirect(HTTPRedirectHandler):
         return None
 
 
-def request(url, *, headers=None, body=None, form=False, timeout=25, raw=False):
+def request(url, *, headers=None, body=None, form=False, timeout=25, raw=False, attempts=3):
     headers = {'User-Agent': 'PersonalStockResearch/0.1', **(headers or {})}
     data = None
     if body is not None:
@@ -101,7 +108,9 @@ def request(url, *, headers=None, body=None, form=False, timeout=25, raw=False):
     # Never follow redirects carrying account or model credentials.
     opener = build_opener(NoRedirect(), HTTPSHandler(context=ctx))
 
-    for attempt in range(3):
+    if not isinstance(attempts, int) or not 1 <= attempts <= 3:
+        raise ValueError('attempts must be between 1 and 3')
+    for attempt in range(attempts):
         try:
             req = Request(url, data=data, headers=headers)
             with opener.open(req, timeout=timeout) as r:
@@ -110,7 +119,7 @@ def request(url, *, headers=None, body=None, form=False, timeout=25, raw=False):
                     raise ValueError('response too large')
                 return text if raw else json.loads(text)
         except HTTPError as exc:
-            if exc.code in (429, 500, 502, 503, 504) and attempt < 2:
+            if exc.code in (429, 500, 502, 503, 504) and attempt < attempts - 1:
                 try:
                     retry_header = exc.headers.get('Retry-After')
                     delay = max(1.0, min(30.0, float(retry_header))) if retry_header is not None else float(2 ** attempt)
@@ -120,20 +129,27 @@ def request(url, *, headers=None, body=None, form=False, timeout=25, raw=False):
             else:
                 raise NetworkError(exc.code) from None
         except (URLError, TimeoutError, OSError):
-            if attempt == 2:
+            if attempt == attempts - 1:
                 raise NetworkError(0) from None
             time.sleep(2 ** attempt)
 
 
 def write_private(path, value):
+    """Atomic per-file replacement, unique temp path and verified private mode."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-    temp = path.with_suffix(path.suffix + '.tmp')
-    content = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False, indent=2)
-    fd = os.open(temp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    with os.fdopen(fd, 'w', encoding='utf-8') as f:
-        f.write(content)
-    os.replace(temp, path)
+    content = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False)
+    fd, name = tempfile.mkstemp(prefix='.' + path.name + '.', suffix='.tmp', dir=path.parent)
+    temp = Path(name)
+    try:
+        with os.fdopen(fd, 'w', encoding='utf-8') as stream:
+            stream.write(content)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.chmod(temp, 0o600)
+        os.replace(temp, path)
+    finally:
+        temp.unlink(missing_ok=True)
 
 
 def load_env(path: Union[str, Path] = '.env'):
@@ -147,4 +163,7 @@ def load_env(path: Union[str, Path] = '.env'):
         key, sep, value = line.partition('=')
         if not sep or not re.fullmatch(r'[A-Z][A-Z0-9_]*', key.strip()):
             raise ValueError('Invalid .env line; use KEY=value')
-        os.environ.setdefault(key.strip(), value.strip().strip('"\''))
+        parts = shlex.split(value.strip(), comments=True, posix=True)
+        if len(parts) > 1:
+            raise ValueError('Quote .env values containing spaces')
+        os.environ.setdefault(key.strip(), parts[0] if parts else '')

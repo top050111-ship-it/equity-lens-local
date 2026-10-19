@@ -12,3 +12,13 @@ This project is licensed under the GNU Affero General Public
 License version 3 or later.
 
 See the LICENSE file for the full license terms.
+
+Release: v1.4.0
+
+This release adds saved-portfolio research mode, frozen holdings
+snapshots, and improvements to claim deduplication, citation
+validation, and portfolio-linked synthesis.
+
+Release metadata does not change the copyright or license terms
+stated above. Third-party components, models, and data remain
+subject to their respective licenses and terms.

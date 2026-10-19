@@ -85,7 +85,7 @@ def yahoo(symbol, news_count=8):
     except Exception as exc:
         errors.append(f'{symbol}: Yahoo 시세 실패 ({type(exc).__name__})')
     try:
-        for raw in ticker.get_news(count=news_count):
+        for raw in (ticker.get_news(count=news_count) if news_count > 0 else []):
             item = raw.get('content') or raw
             url = (item.get('canonicalUrl') or {}).get('url') or (item.get('clickThroughUrl') or {}).get('url') or item.get('link')
             provider = (item.get('provider') or {}).get('displayName') or item.get('publisher') or 'Yahoo Finance'
@@ -130,8 +130,9 @@ def portfolio_bundle(snapshot, config):
     jobs = {}
     with ThreadPoolExecutor(max_workers=3) as pool:
         for p in snapshot['positions']:
-            sources.append(evidence('Toss Securities', p['symbol'] + ' 시세',
-                                    'https://openapi.tossinvest.com/api/v1/prices?symbols=' + quote(p['symbol']),
+            provider = 'Yahoo Finance' if p.get('price_source', '').startswith('Yahoo') else 'Toss Securities · 관측 시각 기준'
+            source_url = p.get('price_url') or ('https://openapi.tossinvest.com/api/v1/prices?symbols=' + quote(p['symbol']))
+            sources.append(evidence(provider, p['symbol'] + ' 시세', source_url,
                                     f"{p['price']} {p['currency']}; {p['price_source']}",
                                     p.get('price_at'), kind='quote', symbols=[p['symbol']],
                                     quality=p['price_quality']))
