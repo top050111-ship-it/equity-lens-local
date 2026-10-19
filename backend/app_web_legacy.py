@@ -12,6 +12,14 @@ except ModuleNotFoundError as exc:
 import os
 import json
 import glob
+import html
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent
+from common import load_env
+load_env(ROOT / '.env')
+DATA = Path(os.getenv("EQUITY_DATA_DIR") or ROOT / "data").expanduser().resolve()
 import subprocess
 import pandas as pd
 
@@ -29,20 +37,19 @@ st.markdown("""
 
 # 데이터 로드 함수
 def load_latest_json(filename):
-    for folder in ['data/reports', 'data', 'demo-output/reports', 'demo-output']:
-        if os.path.exists(folder):
-            if filename == "report":
-                files = glob.glob(os.path.join(folder, "*.json"))
-                files = [f for f in files if "latest_portfolio" not in f and "status" not in f]
-                if files:
-                    latest_file = max(files, key=os.path.getctime)
-                    with open(latest_file, 'r', encoding='utf-8') as f:
-                        return json.load(f)
-            else:
-                filepath = os.path.join(folder, filename)
-                if os.path.exists(filepath):
-                    with open(filepath, 'r', encoding='utf-8') as f:
-                        return json.load(f)
+    folder = Path(st.session_state.get('active_output', str(DATA)))
+    if filename == 'report':
+        files = list((folder / 'reports').glob('*.json'))
+        candidates = sorted(files, key=lambda p: p.stat().st_mtime_ns, reverse=True)
+    else:
+        candidates = [folder / filename]
+    for path in candidates:
+        try:
+            data = json.loads(path.read_text(encoding='utf-8'))
+            if filename != 'report' or all(k in data for k in ('portfolio','macro','synthesis','sources')):
+                return data
+        except (OSError, ValueError, TypeError):
+            continue
     return None
 
 # --- 좌측 사이드바 (내비게이션) ---
@@ -57,13 +64,17 @@ with st.sidebar:
     st.markdown("---")
     
     st.markdown("### ⚙️ 실행 제어")
-    run_mode = st.selectbox("모드 선택", ["demo", "live"])
+    run_mode = st.selectbox("모드 선택", ["demo", "cached", "live"])
     if st.button("🚀 에이전트 파이프라인 실행"):
         with st.spinner("AI 에이전트 데이터 수집 및 분석 중..."):
             try:
-                subprocess.run(["python", "app.py", run_mode], capture_output=True, text=True, check=True)
+                output = ROOT / "demo-output" if run_mode == "demo" else DATA
+                subprocess.run([sys.executable, str(ROOT / "app.py"), run_mode, "--output", str(output)], cwd=ROOT, capture_output=True, text=True, check=True, timeout=7200)
+                st.session_state["active_output"] = str(output)
                 st.success("분석 완료!")
                 st.rerun()
+            except subprocess.TimeoutExpired:
+                st.error("분석 시간 제한을 초과했습니다. 터미널과 모델 상태를 확인하세요.")
             except subprocess.CalledProcessError as e:
                 st.error(f"오류 발생: {e.stderr}")
 
@@ -80,6 +91,8 @@ if menu == "시연 콘솔 (리서치)":
         col_main, col_news = st.columns([7, 3])
         with col_main:
             st.markdown("## 리서치 보고서")
+            if report_data.get("portfolio_context", {}).get("holdings_source") in ("cached", "research"):
+                st.warning("과거 저장 수량으로 분석한 연구 포트폴리오입니다. 현재 계좌 잔고가 아닙니다.")
             st.caption(f"작성 시각: {report_data.get('created_at', '알 수 없음')}")
             
             tab1, tab2, tab3 = st.tabs(["01 기업·포트폴리오", "02 거시경제", "03 종합 판단"])
@@ -91,12 +104,12 @@ if menu == "시연 콘솔 (리서치)":
                 if not agent:
                     st.warning("분석 결과가 없습니다.")
                     return
-                st.markdown(f'<div class="report-brief"><strong>RESEARCH BRIEF</strong><br><br>{agent.get("summary", "")}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="report-brief"><strong>RESEARCH BRIEF</strong><br><br>{html.escape(str(agent.get("summary", "")))}</div>', unsafe_allow_html=True)
                 for f in agent.get('findings', []):
-                    st.markdown(f"#### {f.get('subject', '')} <span class='finding-tag'>{f.get('kind', '')}</span>", unsafe_allow_html=True)
+                    st.markdown(f"#### {html.escape(str(f.get('subject', '')))} <span class='finding-tag'>{html.escape(str(f.get('kind', '')))}</span>", unsafe_allow_html=True)
                     st.write(f.get('claim', ''))
-                    st.markdown(f"<div class='counterpoint-text'><strong>반대 근거:</strong> {f.get('counterpoint', '')}</div>", unsafe_allow_html=True)
-                    st.markdown(f"<div class='counterpoint-text'><strong>재검토 조건:</strong> {f.get('revisit_when', '')}</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div class='counterpoint-text'><strong>반대 근거:</strong> {html.escape(str(f.get('counterpoint', '')))}</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div class='counterpoint-text'><strong>재검토 조건:</strong> {html.escape(str(f.get('revisit_when', '')))}</div>", unsafe_allow_html=True)
                     with st.expander(f"🔗 근거 {len(f.get('evidence_ids', []))}개 보기"):
                         for eid in f.get('evidence_ids', []):
                             st.code(eid)

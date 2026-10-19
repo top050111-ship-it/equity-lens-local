@@ -79,6 +79,9 @@ class Toss:
         holdings = self.get('/api/v1/holdings', account=True)
         if not isinstance(holdings, dict) or not isinstance(holdings.get('items'), list):
             raise ValueError('보유 종목 응답이 올바르지 않습니다.')
+        if not holdings['items']:
+            return dict(as_of=now(), positions=[], fx=None, broker_equity_value_krw='0',
+                        scope='국내·미국 보유 주식만; 현금·채권·옵션 제외')
         symbols = [x['symbol'] for x in holdings['items']]
         meta, prices = {}, {}
         for start in range(0, len(symbols), 100):
@@ -99,7 +102,7 @@ class Toss:
             rows.append(dict(symbol=symbol, name=item['name'], market=m.get('market', 'UNKNOWN'),
                              currency=item['currency'], quantity=item['quantity'],
                              average_price=item['averagePurchasePrice'],
-                             price=p.get('lastPrice', item['lastPrice']),
+                             price=p['lastPrice'] if p.get('lastPrice') is not None else item['lastPrice'],
                              price_at=p.get('timestamp'), price_source='Toss REST',
                              broker_value=item['marketValue']['amount']))
         # Account identifiers and credentials never enter the persisted snapshot.
@@ -124,7 +127,7 @@ def yahoo_symbol(position, overrides=None):
 
 def value_snapshot(snapshot):
     result = copy.deepcopy(snapshot)
-    warnings = []
+    warnings = list(result.get('snapshot_warnings', []))
     total = Decimal(0)
     fx = result.get('fx')
     usdkrw = decimal(fx['midRate']) if fx else None
@@ -151,7 +154,7 @@ def value_snapshot(snapshot):
     for p in result['positions']:
         p['weight_pct'] = float(decimal(p['value_krw']) / total * 100) if total > 0 else 0
     result['calculated_equity_value_krw'] = str(total)
-    result['warnings'] = warnings
+    result['warnings'] = list(dict.fromkeys(warnings))
     result['valuation_at'] = now()
     return result
 
@@ -184,7 +187,7 @@ class LiveQuotes:
             tick = prices.get(p['symbol'])
             tick_time = stamp(tick['timestamp']) if tick else None
             rest_time = stamp(p.get('price_at'))
-            if tick and tick_time and (not rest_time or tick_time >= rest_time):
+            if tick and tick_time and (age_seconds(tick['timestamp']) or 0) >= -300 and (not rest_time or tick_time >= rest_time):
                 p.update(price=tick['price'], price_at=tick['timestamp'], price_source='Toss WebSocket')
         result['stream_status'] = status
         return result
@@ -262,3 +265,4 @@ class LiveQuotes:
                     self.status = '연결 끊김; 재시도 중 (' + type(exc).__name__ + ')'
                 await asyncio.sleep(min(delay, 30) + random.random())
                 delay = min(delay * 2, 30)
+
