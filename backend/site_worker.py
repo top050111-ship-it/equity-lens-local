@@ -11,7 +11,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from urllib.parse import urlsplit
-from common import load_env, now, request, write_private
+from common import load_env, load_config, output_lock, now, request, write_private
 from broker import LiveQuotes, value_snapshot
 from holdings_cache import CachedToss, HoldingsCacheError
 from research_runtime import ResearchPortfolio, collect_research
@@ -57,6 +57,7 @@ def run(config):
         raise ValueError('EQUITY_HOLDINGS_MODE must be live or cached')
     snapshot = broker.snapshot()
     model = Model()
+    model.diagnostic_path=output/'diagnostics'/'worker_model_calls.jsonl'
     quotes = None
     if mode == 'live' and os.getenv('EQUITY_STREAM', 'true').lower() == 'true':
         candidate = LiveQuotes(broker)
@@ -99,6 +100,7 @@ def run(config):
                         print('분석 실패:', type(exc).__name__, flush=True)
                         pending = {'job_id': job_id, 'job_status': 'failed'} if job_id else {}
                     future, job_id = None, None
+                    next_report=time.monotonic()+config['report_interval_seconds']
                 state = 'analyzing' if future else 'failed' if snapshot.get('refresh_error') else 'idle'
                 # A single request exchanges a fresh snapshot, completion and next job.
                 try:
@@ -126,11 +128,9 @@ def run(config):
 def main():
     os.umask(0o077)
     load_env(ROOT / '.env')
-    config = json.loads((ROOT / 'config.json').read_text())
-    if config['holdings_refresh_seconds'] < 10 or config['report_interval_seconds'] < 300:
-        raise ValueError('보유 조회 10초, 분석 간격 300초 이상이 필요합니다.')
-    with (ROOT / '.run.lock').open('w') as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    config = load_config(ROOT/'config.json')
+    output=Path(os.getenv('EQUITY_DATA_DIR') or ROOT/'data').expanduser().resolve()
+    with output_lock(output):
         run(config)
 
 

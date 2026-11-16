@@ -50,3 +50,7 @@ __pycache__/
 /frontend_config_backups/
 *.bak
 *.bak_*
+
+# 중복 복사본 제외
+* 2.*
+* 2

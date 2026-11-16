@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from common import now, write_private, load_env, evidence, decimal
+from common import now, write_private, load_env, load_config, output_lock, evidence, decimal
 from broker import LiveQuotes, value_snapshot
 from holdings_cache import CachedToss, HoldingsCacheError
 from collectors import portfolio_bundle, macro_bundle
@@ -51,6 +51,9 @@ def render_snapshot(snapshot, demo=False):
 
 
 def render_report(result, snapshot, demo=False):
+    if result.get('research_v2') and not demo:
+        from research_render import render_deep_report
+        return render_deep_report(result, snapshot)
     lines = ['# ' + ('[가상 데이터 · AI 미호출] ' if demo else '') + '주식 리서치 보고서', '',
              '작성: ' + result['created_at'],
              '포트폴리오 기준: ' + snapshot['as_of'], '',
@@ -105,10 +108,18 @@ def save_report(result, snapshot, output, demo=False):
         'holdings_as_of': snapshot['as_of'],
         'account_checked_at': snapshot.get('account_checked_at'),
         'fallback_reason': snapshot.get('fallback_reason')}
-    write_private(output / 'reports' / (filename + '.json'), result)
+    state=None
+    if result.get('research_v2'):
+        from research_render import update_changes
+        state=update_changes(result, output, persist=False)
+    # Render and serialize before making any report/baseline visible.
     text = render_report(result, snapshot, demo)
+    json_text=json.dumps(result,ensure_ascii=False,indent=2,allow_nan=False)
     write_private(output / 'reports' / (filename + '.md'), text)
+    write_private(output / 'reports' / (filename + '.json'), json_text)
     write_private(output / 'latest_report.md', text)
+    if state:write_private(output/'research_previous.json',state)
+    # Readers use this pointer to select a matching JSON/Markdown pair.
     write_private(output / 'analysis_status.json', {'status': 'ok' if result['complete'] else 'partial',
                                                    'at': result['created_at'], 'report': filename + '.md'})
     return output / 'reports' / (filename + '.md')
@@ -208,6 +219,7 @@ def live(config, output, watch, stream, *, snapshot_only=False,
         print('보유 수량 기준:', snapshot['as_of'], flush=True)
         return
     model = Model()
+    model.diagnostic_path=output/'diagnostics'/('model_calls_'+datetime.now().strftime('%Y%m%d_%H%M%S_%f')+'.jsonl')
     quotes = None
     if stream:
         candidate = LiveQuotes(broker)
@@ -224,6 +236,9 @@ def live(config, output, watch, stream, *, snapshot_only=False,
     next_holdings, next_report = time.monotonic() + config['holdings_refresh_seconds'], 0
     future = None
     try:
+        if not watch:
+            print('보고서:',analyze_cycle(model,valued,config,output),flush=True)
+            return
         with ThreadPoolExecutor(max_workers=1) as pool:
             while True:
                 current = time.monotonic()
@@ -250,6 +265,7 @@ def live(config, output, watch, stream, *, snapshot_only=False,
                     except Exception as exc:
                         write_private(output / 'analysis_status.json', {'status': 'failed', 'at': now(), 'error': type(exc).__name__})
                     future = None
+                    next_report=time.monotonic()+config['report_interval_seconds']
                 if current >= next_report and future is None and not snapshot.get('refresh_error'):
                     future = pool.submit(analyze_cycle, model, copy.deepcopy(valued), config, output)
                     next_report = time.monotonic() + config['report_interval_seconds']
@@ -293,17 +309,10 @@ def main():
     if args.mode == 'demo':
         demo(output)
         return
-    config = json.loads(Path(args.config).read_text(encoding='utf-8'))
-    if config['holdings_refresh_seconds'] < 10 or config['report_interval_seconds'] < 300:
-        raise ValueError('holdings >= 10초, report >= 300초로 설정하세요.')
+    config = load_config(args.config)
     output.mkdir(parents=True, exist_ok=True, mode=0o700)
     
-    import fcntl
-    with (ROOT / '.run.lock').open('w') as lock:
-        try:
-            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
-            raise ValueError('이 프로젝트가 이미 실행 중입니다.') from None
+    with output_lock(output):
         live(config, output, args.watch, args.stream, snapshot_only=args.snapshot_only,
              simulate_empty=args.simulate_empty_holdings, import_holdings=args.import_holdings,
              source_mode=args.mode, holdings=args.holdings or os.getenv('EQUITY_RESEARCH_FILE'), skip_price_refresh=args.skip_price_refresh,

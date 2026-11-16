@@ -1,0 +1,636 @@
+{
+  "origin": "User-supplied 20261116_190753_295269.json; public cited evidence, actual failed decisions",
+  "rk_payload": {
+    "role": "synthesis",
+    "items": [
+      {
+        "item_id": "F0",
+        "type": "finding",
+        "subject": "RKLB 기업·거시 조건부 연결",
+        "claim": "[RKLB] 기업 관측: 2026-07-01 ~ 2026-09-30 / quarter / consolidated: 매출액 267834000 USD; 영업이익 -79189000 USD; 당기순이익 -79677000 USD; 매출총이익 90071000 USD.\n거시 관측: 미국 연방기금 실효금리(월평균) / Percent: 2026-10-01 = 3.88; 2026-09-01 = 3.75; 2026-08-01 = 3.63. 관측일은 대상 기간이며 발표 시각이 아님.\n전달 경로: 미국 연방기금 실효금리 상승이 RKLB의 조달비용을 증가시켜 영업현금흐름 감소를 악화시킬 수 있다\n시간축: 중기 실적·현금흐름 반영 여부",
+        "kind": "scenario",
+        "evidence_ids": [
+          "E3f663f87024f",
+          "E12bb5754ffc5"
+        ],
+        "confidence": "medium",
+        "counterpoint": "이익 손실은 일시적인 관리 방식의 변화로 인해 발생했을 수 있다",
+        "revisit_when": "다음 기업 공시와 동일 거시 지표 발표에서 관측과 전달 경로를 재검토합니다."
+      },
+      {
+        "item_id": "F1",
+        "type": "finding",
+        "subject": "RKLB 기업·거시 조건부 연결",
+        "claim": "[RKLB] 기업 관측: 2026-01-01 ~ 2026-09-30 / ytd / consolidated: 매출액 702248000 USD; 영업이익 -192672000 USD; 당기순이익 -173957000 USD; 매출총이익 251140000 USD; 영업현금흐름 -127254000 USD; 유형자산 취득 현금유출 84185000 USD.\n거시 관측: 미국 10년물 국채금리 / Percent: 2026-11-12 = 5.1; 2026-11-10 = 4.98; 2026-11-09 = 4.88. 관측일은 대상 기간이며 발표 시각이 아님.\n전달 경로: 미국 10년물 국채금리 상승이 RKLB의 유형자산 취득 현금유출을 확대시켜 영업현금흐름 감소를 악화시킬 수 있다\n시간축: 중기 실적·현금흐름 반영 여부",
+        "kind": "scenario",
+        "evidence_ids": [
+          "Ee8e505d0f2ad",
+          "E633e6a3a7691"
+        ],
+        "confidence": "medium",
+        "counterpoint": "이 금리 수준이 지속된다면 경제 회복에 도움을 줄 수 있는 부정적 요인을 제공할 수 있다",
+        "revisit_when": "다음 기업 공시와 동일 거시 지표 발표에서 관측과 전달 경로를 재검토합니다."
+      }
+    ],
+    "sources": [
+      {
+        "id": "Ee8e505d0f2ad",
+        "provider": "EQUITY LENS · 공식 재무 재구성",
+        "title": "RKLB 최신 ytd 재무 묶음 1",
+        "url": "https://www.sec.gov/Archives/edgar/data/1819994/000181999426000074/0001819994-26-000074-index.html",
+        "content": "{\"symbol\":\"RKLB\",\"start\":\"2026-01-01\",\"end\":\"2026-09-30\",\"basis\":\"ytd\",\"scope\":\"consolidated\",\"unit\":\"USD\",\"facts\":[{\"metric\":\"revenue\",\"value\":\"702248000\",\"filed\":\"2026-11-09\"},{\"metric\":\"operating_income\",\"value\":\"-192672000\",\"filed\":\"2026-11-09\"},{\"metric\":\"net_income\",\"value\":\"-173957000\",\"filed\":\"2026-11-09\"},{\"metric\":\"gross_profit\",\"value\":\"251140000\",\"filed\":\"2026-11-09\"},{\"metric\":\"operating_cashflow\",\"value\":\"-127254000\",\"filed\":\"2026-11-09\"},{\"metric\":\"ppe_purchases\",\"value\":\"84185000\",\"filed\":\"2026-11-09\"}],\"note\":\"공식 API 값을 코드로 재배열; 원자료의 공시일·계정·출처를 별도 보존. 빈 계정은 0이 아님.\"}",
+        "observed_at": "2026-11-09T00:00:00+00:00",
+        "retrieved_at": "2026-11-16T09:15:25.906677+00:00",
+        "kind": "financial_summary",
+        "symbols": [
+          "RKLB"
+        ],
+        "primary": false,
+        "period_end": "2026-09-30",
+        "period_start": "2026-01-01",
+        "basis": "ytd",
+        "input_evidence_ids": [
+          "E9ad9bdbcce34",
+          "Eda26b7c65d83",
+          "Ebce8190c0ff6"
+        ],
+        "content_scope": "공식 재무수치 재배열; 원자료 API 계정·기간을 별도 보존"
+      },
+      {
+        "id": "E3f663f87024f",
+        "provider": "EQUITY LENS · 공식 재무 재구성",
+        "title": "RKLB 최신 quarter 재무 묶음 1",
+        "url": "https://www.sec.gov/Archives/edgar/data/1819994/000181999426000074/0001819994-26-000074-index.html",
+        "content": "{\"symbol\":\"RKLB\",\"start\":\"2026-07-01\",\"end\":\"2026-09-30\",\"basis\":\"quarter\",\"scope\":\"consolidated\",\"unit\":\"USD\",\"facts\":[{\"metric\":\"revenue\",\"value\":\"267834000\",\"filed\":\"2026-11-09\"},{\"metric\":\"operating_income\",\"value\":\"-79189000\",\"filed\":\"2026-11-09\"},{\"metric\":\"net_income\",\"value\":\"-79677000\",\"filed\":\"2026-11-09\"},{\"metric\":\"gross_profit\",\"value\":\"90071000\",\"filed\":\"2026-11-09\"}],\"note\":\"공식 API 값을 코드로 재배열; 원자료의 공시일·계정·출처를 별도 보존. 빈 계정은 0이 아님.\"}",
+        "observed_at": "2026-11-09T00:00:00+00:00",
+        "retrieved_at": "2026-11-16T09:15:25.906793+00:00",
+        "kind": "financial_summary",
+        "symbols": [
+          "RKLB"
+        ],
+        "primary": false,
+        "period_end": "2026-09-30",
+        "period_start": "2026-07-01",
+        "basis": "quarter",
+        "input_evidence_ids": [
+          "E0978158e1f0d",
+          "Eedddb5b6423d"
+        ],
+        "content_scope": "공식 재무수치 재배열; 원자료 API 계정·기간을 별도 보존"
+      },
+      {
+        "id": "E12bb5754ffc5",
+        "provider": "FRED",
+        "title": "Federal Funds Effective Rate",
+        "url": "https://fred.stlouisfed.org/series/FEDFUNDS",
+        "content": "{\"series_id\": \"FEDFUNDS\", \"canonical_label_ko\": \"미국 연방기금 실효금리(월평균)\", \"units\": \"Percent\", \"frequency\": \"Monthly\", \"seasonal_adjustment\": \"Not Seasonally Adjusted\", \"last_updated\": \"2026-11-02 15:16:50-06\", \"observations\": [{\"realtime_start\": \"2026-11-02\", \"realtime_end\": \"2026-11-02\", \"date\": \"2026-10-01\", \"value\": \"3.88\"}, {\"realtime_start\": \"2026-11-02\", \"realtime_end\": \"2026-11-02\", \"date\": \"2026-09-01\", \"value\": \"3.75\"}, {\"realtime_start\": \"2026-11-02\", \"realtime_end\": \"2026-11-02\", \"date\": \"2026-08-01\", \"value\": \"3.63\"}], \"code_calculations\": [{\"name\": \"직전 유효 관측 대비 수준 차이(원 단위)\", \"value\": \"0.13\", \"periods\": [\"2026-10-01\", \"2026-09-01\"]}], \"note\": \"date는 지표 대상 기간입니다. 발표 시각·컨센서스가 아닙니다. 수정치가 포함될 수 있습니다.\"}",
+        "observed_at": null,
+        "retrieved_at": "2026-11-16T09:14:52.874635+00:00",
+        "kind": "indicator",
+        "observation_period": "2026-10-01",
+        "content_scope": "공식 시계열 최신 조회; 과거 빈티지 아님"
+      },
+      {
+        "id": "E633e6a3a7691",
+        "provider": "FRED",
+        "title": "Market Yield on U.S. Treasury Securities at 10-Year Constant Maturity, Quoted on an Investment Basis",
+        "url": "https://fred.stlouisfed.org/series/DGS10",
+        "content": "{\"series_id\": \"DGS10\", \"canonical_label_ko\": \"미국 10년물 국채금리\", \"units\": \"Percent\", \"frequency\": \"Daily\", \"seasonal_adjustment\": \"Not Seasonally Adjusted\", \"last_updated\": \"2026-11-13 15:16:47-06\", \"observations\": [{\"realtime_start\": \"2026-11-13\", \"realtime_end\": \"2026-11-13\", \"date\": \"2026-11-12\", \"value\": \"5.1\"}, {\"realtime_start\": \"2026-11-13\", \"realtime_end\": \"2026-11-13\", \"date\": \"2026-11-10\", \"value\": \"4.98\"}, {\"realtime_start\": \"2026-11-13\", \"realtime_end\": \"2026-11-13\", \"date\": \"2026-11-09\", \"value\": \"4.88\"}], \"code_calculations\": [{\"name\": \"직전 유효 관측 대비 수준 차이(원 단위)\", \"value\": \"0.12\", \"periods\": [\"2026-11-12\", \"2026-11-10\"]}], \"note\": \"date는 지표 대상 기간입니다. 발표 시각·컨센서스가 아닙니다. 수정치가 포함될 수 있습니다.\"}",
+        "observed_at": null,
+        "retrieved_at": "2026-11-16T09:14:52.905116+00:00",
+        "kind": "indicator",
+        "observation_period": "2026-11-12",
+        "content_scope": "공식 시계열 최신 조회; 과거 빈티지 아님"
+      }
+    ],
+    "positions": [
+      {
+        "symbol": "RKLB"
+      }
+    ],
+    "source_groups": {
+      "portfolio": [
+        "E3f663f87024f",
+        "Ee8e505d0f2ad"
+      ],
+      "macro": [
+        "E12bb5754ffc5",
+        "E633e6a3a7691"
+      ]
+    }
+  },
+  "rk_review": {
+    "decisions": [
+      {
+        "item_id": "F0",
+        "supported": true,
+        "portfolio_linked": true,
+        "duplicate_of": "",
+        "reason": "RKLB의 2026-07-01 ~ 2026-09-30 분기 재무 데이터와 미국 연방기금 실효금리의 2026-08-01 ~ 2026-10-01 월평균 관측이 원문에서 직접적으로 뒷받침됨. 미국 연방기금 실효금리 상승이 RKLB의 조달비용을 증가시켜 영업현금흐름 감소를 악화시킬 수 있다는 전달 경로는 실제 관측과 일치함.",
+        "quotes": [
+          {
+            "evidence_id": "Ee8e505d0f2ad",
+            "field": "title",
+            "quote": "RKLB 최신 ytd 재무 묶음 1"
+          },
+          {
+            "evidence_id": "Ee8e505d0f2ad",
+            "field": "content",
+            "quote": "{\"symbol\":\"RKLB\",\"start\":\"2026-01-01\",\"end\":\"2026-09-30\",\"basis\":\"ytd\",\"scope\":\"consolidated\",\"unit\":\"USD\",\"facts\":[{\"metric\":\"revenue\",\"value\":\"702248000\",\"filed\":\"2026-11-09\"},{\"metric\":\"operating_income\",\"value\":\"-192672000\",\"filed\":\"2026-11-09\"},{\"metric\":\"net_income\",\"value\":\"-173957000\",\"filed\":\"2026-11-09\"},{\"metric\":\"gross_profit\",\"value\":\"251140000\",\"filed\":\"2026-11-09\"},{\"metric\":\"operating_cashflow\",\"value\":\"-127254000\",\"filed\":\"2026-11-09\"},{\"metric\":\"ppe_purchases\",\"value\":\"84185000\",\"filed\":\"2026-11-09\"}],\"note\":\"공식 API 값을 코드로 재배열; 원자료의 공시일·계정·출처를 별도 보존. 빈 계정은 0이 아님.\"}"
+          },
+          {
+            "evidence_id": "E3f663f87024f",
+            "field": "title",
+            "quote": "RKLB 최신 quarter 재무 묶음 1"
+          },
+          {
+            "evidence_id": "E3f663f87024f",
+            "field": "content",
+            "quote": "{\"symbol\":\"RKLB\",\"start\":\"2026-07-01\",\"end\":\"2026-09-30\",\"basis\":\"quarter\",\"scope\":\"consolidated\",\"unit\":\"USD\",\"facts\":[{\"metric\":\"revenue\",\"value\":\"267834000\",\"filed\":\"2026-11-09\"},{\"metric\":\"operating_income\",\"value\":\"-79189000\",\"filed\":\"2026-11-09\"},{\"metric\":\"net_income\",\"value\":\"-79677000\",\"filed\":\"2026-11-09\"},{\"metric\":\"gross_profit\",\"value\":\"90071000\",\"filed\":\"2026-11-09\"}],\"note\":\"공식 API 값을 코드로 재배열; 원자료의 공시일·계정·출처를 별도 보존. 빈 계정은 0이 아님.\"}"
+          },
+          {
+            "evidence_id": "E12bb5754ffc5",
+            "field": "title",
+            "quote": "Federal Funds Effective Rate"
+          },
+          {
+            "evidence_id": "E12bb5754ffc5",
+            "field": "content",
+            "quote": "{\"series_id\": \"FEDFUNDS\", \"canonical_label_ko\": \"미국 연방기금 실효금리(월평균)\", \"units\": \"Percent\", \"frequency\": \"Monthly\", \"seasonal_adjustment\": \"Not Seasonally Adjusted\", \"last_updated\": \"2026-11-02 15:16:50-06\", \"observations\": [{\"realtime_start\": \"2026-11-02\", \"realtime_end\": \"2026-11-02\", \"date\": \"2026-10-01\", \"value\": \"3.88\"}, {\"realtime_start\": \"2026-11-02\", \"realtime_end\": \"2026-11-02\", \"date\": \"2026-09-01\", \"value\": \"3.75\"}, {\"realtime_start\": \"2026-11-02\", \"realtime_end\": \"2026-11-02\", \"date\": \"2026-08-01\", \"value\": \"3.63\"}], \"code_calculations\": [{\"name\": \"직전 유효 관측 대비 수준 차이(원 단위)\", \"value\": \"0.13\", \"periods\": [\"2026-10-01\", \"2026-09-01\"]}], \"note\": \"date는 지표 대상 기간입니다. 발표 시각·컨센서스가 아닙니다. 수정치가 포함될 수 있습니다.\"}"
+          }
+        ]
+      },
+      {
+        "item_id": "F1",
+        "supported": true,
+        "portfolio_linked": true,
+        "duplicate_of": "",
+        "reason": "RKLB의 2026-01-01 ~ 2026-09-30 연도 재무 데이터와 미국 10년물 국채금리의 2026-11-09 ~ 2026-11-12 관측이 원문에서 직접적으로 뒷받침됨. 미국 10년물 국채금리 상승이 RKLB의 유형자산 취득 현금유출을 확대시켜 영업현금흐름 감소를 악화시킬 수 있다는 전달 경로는 실제 관측과 일치함.",
+        "quotes": [
+          {
+            "evidence_id": "Ee8e505d0f2ad",
+            "field": "title",
+            "quote": "RKLB 최신 ytd 재무 묶음 1"
+          },
+          {
+            "evidence_id": "Ee8e505d0f2ad",
+            "field": "content",
+            "quote": "{\"symbol\":\"RKLB\",\"start\":\"2026-01-01\",\"end\":\"2026-09-30\",\"basis\":\"ytd\",\"scope\":\"consolidated\",\"unit\":\"USD\",\"facts\":[{\"metric\":\"revenue\",\"value\":\"702248000\",\"filed\":\"2026-11-09\"},{\"metric\":\"operating_income\",\"value\":\"-192672000\",\"filed\":\"2026-11-09\"},{\"metric\":\"net_income\",\"value\":\"-173957000\",\"filed\":\"2026-11-09\"},{\"metric\":\"gross_profit\",\"value\":\"251140000\",\"filed\":\"2026-11-09\"},{\"metric\":\"operating_cashflow\",\"value\":\"-127254000\",\"filed\":\"2026-11-09\"},{\"metric\":\"ppe_purchases\",\"value\":\"84185000\",\"filed\":\"2026-11-09\"}],\"note\":\"공식 API 값을 코드로 재배열; 원자료의 공시일·계정·출처를 별도 보존. 빈 계정은 0이 아님.\"}"
+          },
+          {
+            "evidence_id": "E3f663f87024f",
+            "field": "title",
+            "quote": "RKLB 최신 quarter 재무 묶음 1"
+          },
+          {
+            "evidence_id": "E3f663f87024f",
+            "field": "content",
+            "quote": "{\"symbol\":\"RKLB\",\"start\":\"2026-07-01\",\"end\":\"2026-09-30\",\"basis\":\"quarter\",\"scope\":\"consolidated\",\"unit\":\"USD\",\"facts\":[{\"metric\":\"revenue\",\"value\":\"267834000\",\"filed\":\"2026-11-09\"},{\"metric\":\"operating_income\",\"value\":\"-79189000\",\"filed\":\"2026-11-09\"},{\"metric\":\"net_income\",\"value\":\"-79677000\",\"filed\":\"2026-11-09\"},{\"metric\":\"gross_profit\",\"value\":\"90071000\",\"filed\":\"2026-11-09\"}],\"note\":\"공식 API 값을 코드로 재배열; 원자료의 공시일·계정·출처를 별도 보존. 빈 계정은 0이 아님.\"}"
+          },
+          {
+            "evidence_id": "E633e6a3a7691",
+            "field": "title",
+            "quote": "Market Yield on U.S. Treasury Securities at 10-Year Constant Maturity, Quoted on an Investment Basis"
+          },
+          {
+            "evidence_id": "E633e6a3a7691",
+            "field": "content",
+            "quote": "{\"series_id\": \"DGS10\", \"canonical_label_ko\": \"미국 10년물 국채금리\", \"units\": \"Percent\", \"frequency\": \"Daily\", \"seasonal_adjustment\": \"Not Seasonally Adjusted\", \"last_updated\": \"2026-11-13 15:16:47-06\", \"observations\": [{\"realtime_start\": \"2026-11-13\", \"realtime_end\": \"2026-11-13\", \"date\": \"2026-11-12\", \"value\": \"5.1\"}, {\"realtime_start\": \"2026-11-13\", \"realtime_end\": \"2026-11-13\", \"date\": \"2026-11-10\", \"value\": \"4.98\"}, {\"realtime_start\": \"2026-11-13\", \"realtime_end\": \"2026-11-13\", \"date\": \"2026-11-09\", \"value\": \"4.88\"}], \"code_calculations\": [{\"name\": \"직전 유효 관측 대비 수준 차이(원 단위)\", \"value\": \"0.12\", \"periods\": [\"2026-11-12\", \"2026-11-10\"]}], \"note\": \"date는 지표 대상 기간입니다. 발표 시각·컨센서스가 아닙니다. 수정치가 포함될 수 있습니다.\"}"
+          }
+        ]
+      }
+    ]
+  },
+  "accepted_links": [
+    {
+      "symbol": "SCHD",
+      "finding": {
+        "subject": "SCHD 기업·거시 조건부 연결",
+        "claim": "[SCHD] 기업 관측: The fund’s goal is to track as closely as possible, before fees and expenses, the total return of the Dow Jones U.S. Dividend 100TM Index.\n거시 관측: 미국 연방기금 실효금리(월평균) / Percent: 2026-10-01 = 3.88; 2026-09-01 = 3.75; 2026-08-01 = 3.63. 관측일은 대상 기간이며 발표 시각이 아님.\n전달 경로: 연방기금 실효금리 상승이 할인율과 조달비용에 부담을 주는 경로를 통해 SCHD의 수익률 추종 정확도를 저하할 수 있다\n시간축: 단기 시장 가격 반응",
+        "kind": "scenario",
+        "evidence_ids": [
+          "Ec040a46d2ea5",
+          "E12bb5754ffc5"
+        ],
+        "confidence": "medium",
+        "counterpoint": "연방기금 실효금리 상승은 소비자 물가와 경제 성장에 부정적 영향을 미칠 수 있으나, SCHD의 수익률 추종 목표를 유지하는 데는 직접적인 영향이 없을 수 있다",
+        "revisit_when": "다음 기업 공시와 동일 거시 지표 발표에서 관측과 전달 경로를 재검토합니다."
+      }
+    },
+    {
+      "symbol": "SCHD",
+      "finding": {
+        "subject": "SCHD 기업·거시 조건부 연결",
+        "claim": "[SCHD] 기업 관측: The fund is subject to risks, any of which could cause an investor to lose money. The fund’s principal risks include:\n거시 관측: 미국 10년물 국채금리 / Percent: 2026-11-12 = 5.1; 2026-11-10 = 4.98; 2026-11-09 = 4.88. 관측일은 대상 기간이며 발표 시각이 아님.\n전달 경로: 10년물 국채금리 상승이 경제적 리스크를 증가시켜 SCHD의 하방 위험을 강화할 수 있다\n시간축: 단기 시장 가격 반응",
+        "kind": "scenario",
+        "evidence_ids": [
+          "E331d8544f91b",
+          "E633e6a3a7691"
+        ],
+        "confidence": "medium",
+        "counterpoint": "10년물 국채금리 상승은 경제 회복에 도움을 줄 수 있는 부정적 요인을 제공하지만, SCHD의 투자자 손실 위험을 감소시키는 영향은 없을 수 있다",
+        "revisit_when": "다음 기업 공시와 동일 거시 지표 발표에서 관측과 전달 경로를 재검토합니다."
+      }
+    },
+    {
+      "symbol": "URA",
+      "finding": {
+        "subject": "URA 기업·거시 조건부 연결",
+        "claim": "[URA] 기업 관측: The Fund concentrates its investments (i.e., holds 25% or more of its total assets) in a particular industry or group of industries to approximately the same extent that the Underlying Index is concentrated. As of December 31, 2025, the Underlying Index was concentrated in the oil, gas and consumable fuels industry and had significant exposure to the energy sector. The Fund is classified as “non-diversified,” which means it may invest a larger percentage of its assets in a smaller number of issuers than a diversified fund.\n거시 관측: 미국 연방기금 실효금리(월평균) / Percent: 2026-10-01 = 3.88; 2026-09-01 = 3.75; 2026-08-01 = 3.63. 관측일은 대상 기간이며 발표 시각이 아님.\n전달 경로: 에너지 산업의 일시적 불안정성 또는 수요 감소가 펀드의 주식 포트폴리오에 영향을 미칠 수 있다\n시간축: 단기 시장 가격 반응",
+        "kind": "scenario",
+        "evidence_ids": [
+          "E64e95527056f",
+          "E12bb5754ffc5"
+        ],
+        "confidence": "medium",
+        "counterpoint": "에너지 산업의 수익성 증가로 인해 펀드가 비용 절감 효과를 통해 수익을 회복할 수 있다",
+        "revisit_when": "다음 기업 공시와 동일 거시 지표 발표에서 관측과 전달 경로를 재검토합니다."
+      }
+    },
+    {
+      "symbol": "URA",
+      "finding": {
+        "subject": "URA 기업·거시 조건부 연결",
+        "claim": "[URA] 기업 관측: The Global X Uranium ETF (the \"Fund\") seeks to provide investment results that correspond generally to the price and yield performance, before fees and expenses, of the Solactive Global Uranium & Nuclear Components Total Return Index (the \"Underlying Index\").\n거시 관측: 미국 10년물 국채금리 / Percent: 2026-11-12 = 5.1; 2026-11-10 = 4.98; 2026-11-09 = 4.88. 관측일은 대상 기간이며 발표 시각이 아님.\n전달 경로: 원자재 가격 변동에 따른 지수 구성 요소의 가격 변동이 펀드의 수익률에 직접 반영된다\n시간축: 단기 시장 가격 반응",
+        "kind": "scenario",
+        "evidence_ids": [
+          "E676b30df2520",
+          "E633e6a3a7691"
+        ],
+        "confidence": "medium",
+        "counterpoint": "에너지 관련 지수 구성 요소의 수요 증가로 인해 펀드의 수익률이 긍정적으로 변화할 수 있다",
+        "revisit_when": "다음 기업 공시와 동일 거시 지표 발표에서 관측과 전달 경로를 재검토합니다."
+      }
+    },
+    {
+      "symbol": "000660",
+      "finding": {
+        "subject": "000660 기업·거시 조건부 연결",
+        "claim": "[000660] 기업 관측: 시점 ~ 2026-06-30 / instant / CFS: 재고자산 17985706000000 KRW.\n거시 관측: 미국 연방기금 실효금리(월평균) / Percent: 2026-10-01 = 3.88; 2026-09-01 = 3.75; 2026-08-01 = 3.63. 관측일은 대상 기간이며 발표 시각이 아님.\n전달 경로: 재고자산 증가가 유동자산에서 현금 유동성 감소를 유발하고, 이는 영업현금흐름 감소를 가속화할 수 있음\n시간축: 단기 시장 가격 반응",
+        "kind": "scenario",
+        "evidence_ids": [
+          "E664b1cda306a",
+          "E12bb5754ffc5"
+        ],
+        "confidence": "medium",
+        "counterpoint": "재고자산이 수요 증가에 따라 효율적으로 변환될 경우, 현금 유동성은 유지될 수 있음",
+        "revisit_when": "다음 기업 공시와 동일 거시 지표 발표에서 관측과 전달 경로를 재검토합니다."
+      }
+    },
+    {
+      "symbol": "000660",
+      "finding": {
+        "subject": "000660 기업·거시 조건부 연결",
+        "claim": "[000660] 기업 관측: 시점 ~ 2026-06-30 / instant / CFS: 현금및현금성자산 26835986000000 KRW; 자산총계 348862214000000 KRW; 부채총계 86168986000000 KRW; 자본총계 262693228000000 KRW; 유동자산 156155954000000 KRW; 유동부채 60257051000000 KRW.\n거시 관측: 미국 10년물 국채금리 / Percent: 2026-11-12 = 5.1; 2026-11-10 = 4.98; 2026-11-09 = 4.88. 관측일은 대상 기간이며 발표 시각이 아님.\n전달 경로: 10년물 국채금리 상승이 장기 금리 상승을 유도하여 경제적 리스크를 증가시킬 수 있음\n시간축: 단기 시장 가격 반응",
+        "kind": "scenario",
+        "evidence_ids": [
+          "Ed3baf026cbff",
+          "E633e6a3a7691"
+        ],
+        "confidence": "medium",
+        "counterpoint": "10년물 국채금리 상승이 경제 회복에 도움을 줄 수 있는 부정적 요인을 제공할 수 있음",
+        "revisit_when": "다음 기업 공시와 동일 거시 지표 발표에서 관측과 전달 경로를 재검토합니다."
+      }
+    },
+    {
+      "symbol": "SPCX",
+      "finding": {
+        "subject": "SPCX 기업·거시 조건부 연결",
+        "claim": "[SPCX] 기업 관측: 2026-01-01 ~ 2026-09-30 / ytd / consolidated: 매출액 27083000000 USD; 영업이익 705000000 USD; 당기순이익 -413000000 USD; 영업현금흐름 13097000000 USD; 유형자산 취득 현금유출 48069000000 USD.\n거시 관측: 미국 연방기금 실효금리(월평균) / Percent: 2026-10-01 = 3.88; 2026-09-01 = 3.75; 2026-08-01 = 3.63. 관측일은 대상 기간이며 발표 시각이 아님.\n전달 경로: 연방기금 실효금리 상승이 조달비용을 증가시켜, SPXC의 유형자산 취득 현금유출을 가속화할 수 있다.\n시간축: 단기 시장 가격 반응",
+        "kind": "scenario",
+        "evidence_ids": [
+          "Eb4f345e9683a",
+          "E12bb5754ffc5"
+        ],
+        "confidence": "medium",
+        "counterpoint": "연방기금 실효금리 상승은 소비자 물가와 경제 성장에 부정적 영향을 미칠 수 있으나, SPXC의 단기 매출 성장에 긍정적 영향을 주는 경우도 있다.",
+        "revisit_when": "다음 기업 공시와 동일 거시 지표 발표에서 관측과 전달 경로를 재검토합니다."
+      }
+    },
+    {
+      "symbol": "SPCX",
+      "finding": {
+        "subject": "SPCX 기업·거시 조건부 연결",
+        "claim": "[SPCX] 기업 관측: 2026-07-01 ~ 2026-09-30 / quarter / consolidated: 매출 전년 동기 대비 증감률 161.39 %.\n거시 관측: 미국 10년물 국채금리 / Percent: 2026-11-12 = 5.1; 2026-11-10 = 4.98; 2026-11-09 = 4.88. 관측일은 대상 기간이며 발표 시각이 아님.\n전달 경로: 10년물 국채금리 상승이 경기 회복을 촉진할 수 있는 부정적 요인으로 작용하여, SPXC의 매출 성장이 단기적으로 지속될 수 있다.\n시간축: 중기 실적·현금흐름 반영 여부",
+        "kind": "scenario",
+        "evidence_ids": [
+          "E6d9b4569bf99",
+          "E633e6a3a7691"
+        ],
+        "confidence": "medium",
+        "counterpoint": "10년물 국채금리 상승은 장기 경제 리스크를 증가시켜, SPXC의 매출 성장이 지속될 수 있는 기반을 약화시킬 수 있다.",
+        "revisit_when": "다음 기업 공시와 동일 거시 지표 발표에서 관측과 전달 경로를 재검토합니다."
+      }
+    },
+    {
+      "symbol": "005930",
+      "finding": {
+        "subject": "005930 기업·거시 조건부 연결",
+        "claim": "[005930] 기업 관측: 2026-04-01 ~ 2026-06-30 / quarter / CFS: 매출액 171499470000000 KRW; 영업이익 89492412000000 KRW; 당기순이익 71624461000000 KRW; 매출총이익 119300711000000 KRW.\n거시 관측: 미국 연방기금 실효금리(월평균) / Percent: 2026-10-01 = 3.88; 2026-09-01 = 3.75; 2026-08-01 = 3.63. 관측일은 대상 기간이며 발표 시각이 아님.\n전달 경로: 미국 연방기금 실효금리 상승이 할인율과 조달비용을 증가시켜 삼성전자의 매출 성장이 수요 확대를 지속할 수 있도록 한다.\n시간축: 단기 시장 가격 반응",
+        "kind": "scenario",
+        "evidence_ids": [
+          "E73bef86d8f62",
+          "E12bb5754ffc5"
+        ],
+        "confidence": "medium",
+        "counterpoint": "연방기금 실효금리 상승이 소비자 물가와 경제 성장에 부정적 영향을 미칠 수 있다.",
+        "revisit_when": "다음 기업 공시와 동일 거시 지표 발표에서 관측과 전달 경로를 재검토합니다."
+      }
+    },
+    {
+      "symbol": "005930",
+      "finding": {
+        "subject": "005930 기업·거시 조건부 연결",
+        "claim": "[005930] 기업 관측: 2026-04-01 ~ 2026-06-30 / quarter / CFS: 매출 전년 동기 대비 증감률 130.00 %.\n거시 관측: 미국 10년물 국채금리 / Percent: 2026-11-12 = 5.1; 2026-11-10 = 4.98; 2026-11-09 = 4.88. 관측일은 대상 기간이며 발표 시각이 아님.\n전달 경로: 미국 10년물 국채금리 상승이 장기 경제 리스크를 증가시켜 삼성전자의 매출 성장이 수요 확대를 지속할 수 있도록 한다.\n시간축: 단기 시장 가격 반응",
+        "kind": "scenario",
+        "evidence_ids": [
+          "Eeb1cf34973eb",
+          "E633e6a3a7691"
+        ],
+        "confidence": "medium",
+        "counterpoint": "10년물 국채금리 상승이 경제 회복에 도움을 줄 수 있는 부정적 요인을 제공할 수 있다.",
+        "revisit_when": "다음 기업 공시와 동일 거시 지표 발표에서 관측과 전달 경로를 재검토합니다."
+      }
+    }
+  ],
+  "sources": [
+    {
+      "id": "Ee8e505d0f2ad",
+      "provider": "EQUITY LENS · 공식 재무 재구성",
+      "title": "RKLB 최신 ytd 재무 묶음 1",
+      "url": "https://www.sec.gov/Archives/edgar/data/1819994/000181999426000074/0001819994-26-000074-index.html",
+      "content": "{\"symbol\":\"RKLB\",\"start\":\"2026-01-01\",\"end\":\"2026-09-30\",\"basis\":\"ytd\",\"scope\":\"consolidated\",\"unit\":\"USD\",\"facts\":[{\"metric\":\"revenue\",\"value\":\"702248000\",\"filed\":\"2026-11-09\"},{\"metric\":\"operating_income\",\"value\":\"-192672000\",\"filed\":\"2026-11-09\"},{\"metric\":\"net_income\",\"value\":\"-173957000\",\"filed\":\"2026-11-09\"},{\"metric\":\"gross_profit\",\"value\":\"251140000\",\"filed\":\"2026-11-09\"},{\"metric\":\"operating_cashflow\",\"value\":\"-127254000\",\"filed\":\"2026-11-09\"},{\"metric\":\"ppe_purchases\",\"value\":\"84185000\",\"filed\":\"2026-11-09\"}],\"note\":\"공식 API 값을 코드로 재배열; 원자료의 공시일·계정·출처를 별도 보존. 빈 계정은 0이 아님.\"}",
+      "observed_at": "2026-11-09T00:00:00+00:00",
+      "retrieved_at": "2026-11-16T09:15:25.906677+00:00",
+      "kind": "financial_summary",
+      "symbols": [
+        "RKLB"
+      ],
+      "primary": false,
+      "period_end": "2026-09-30",
+      "period_start": "2026-01-01",
+      "basis": "ytd",
+      "input_evidence_ids": [
+        "E9ad9bdbcce34",
+        "Eda26b7c65d83",
+        "Ebce8190c0ff6"
+      ],
+      "content_scope": "공식 재무수치 재배열; 원자료 API 계정·기간을 별도 보존"
+    },
+    {
+      "id": "E3f663f87024f",
+      "provider": "EQUITY LENS · 공식 재무 재구성",
+      "title": "RKLB 최신 quarter 재무 묶음 1",
+      "url": "https://www.sec.gov/Archives/edgar/data/1819994/000181999426000074/0001819994-26-000074-index.html",
+      "content": "{\"symbol\":\"RKLB\",\"start\":\"2026-07-01\",\"end\":\"2026-09-30\",\"basis\":\"quarter\",\"scope\":\"consolidated\",\"unit\":\"USD\",\"facts\":[{\"metric\":\"revenue\",\"value\":\"267834000\",\"filed\":\"2026-11-09\"},{\"metric\":\"operating_income\",\"value\":\"-79189000\",\"filed\":\"2026-11-09\"},{\"metric\":\"net_income\",\"value\":\"-79677000\",\"filed\":\"2026-11-09\"},{\"metric\":\"gross_profit\",\"value\":\"90071000\",\"filed\":\"2026-11-09\"}],\"note\":\"공식 API 값을 코드로 재배열; 원자료의 공시일·계정·출처를 별도 보존. 빈 계정은 0이 아님.\"}",
+      "observed_at": "2026-11-09T00:00:00+00:00",
+      "retrieved_at": "2026-11-16T09:15:25.906793+00:00",
+      "kind": "financial_summary",
+      "symbols": [
+        "RKLB"
+      ],
+      "primary": false,
+      "period_end": "2026-09-30",
+      "period_start": "2026-07-01",
+      "basis": "quarter",
+      "input_evidence_ids": [
+        "E0978158e1f0d",
+        "Eedddb5b6423d"
+      ],
+      "content_scope": "공식 재무수치 재배열; 원자료 API 계정·기간을 별도 보존"
+    },
+    {
+      "id": "E6d9b4569bf99",
+      "provider": "EQUITY LENS · Decimal 계산",
+      "title": "SPCX 매출 전년 동기 대비 증감률 2026-09-30 quarter",
+      "url": "https://www.sec.gov/Archives/edgar/data/1181412/000162828026066880/0001628280-26-066880-index.html",
+      "content": "{\"name\":\"revenue_yoy\",\"label\":\"매출 전년 동기 대비 증감률\",\"value\":\"161.39\",\"unit\":\"%\",\"start\":\"2026-07-01\",\"end\":\"2026-09-30\",\"basis\":\"quarter\",\"scope\":\"consolidated\",\"formula\":\"(current_revenue/prior_revenue-1)*100\",\"inputs\":[{\"metric\":\"revenue\",\"value\":\"14575000000\",\"unit\":\"USD\",\"start\":\"2026-07-01\",\"end\":\"2026-09-30\",\"basis\":\"quarter\",\"scope\":\"consolidated\",\"tag\":\"us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax\",\"evidence_id\":\"Ed8487d6faa18\"},{\"metric\":\"revenue\",\"value\":\"5576000000\",\"unit\":\"USD\",\"start\":\"2025-07-01\",\"end\":\"2025-09-30\",\"basis\":\"quarter\",\"scope\":\"consolidated\",\"tag\":\"us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax\",\"evidence_id\":\"E061a8ab7224a\"}]}",
+      "observed_at": "2026-10-22T00:00:00+00:00",
+      "retrieved_at": "2026-11-16T09:15:27.821510+00:00",
+      "kind": "calculation",
+      "symbols": [
+        "SPCX"
+      ],
+      "primary": false,
+      "content_scope": "원자료를 코드로 계산; 공식기관 발표 지표가 아님",
+      "period_end": "2026-09-30",
+      "input_evidence_ids": [
+        "Ed8487d6faa18",
+        "E061a8ab7224a"
+      ]
+    },
+    {
+      "id": "Eb4f345e9683a",
+      "provider": "EQUITY LENS · 공식 재무 재구성",
+      "title": "SPCX 최신 ytd 재무 묶음 1",
+      "url": "https://www.sec.gov/Archives/edgar/data/1181412/000162828026066880/0001628280-26-066880-index.html",
+      "content": "{\"symbol\":\"SPCX\",\"start\":\"2026-01-01\",\"end\":\"2026-09-30\",\"basis\":\"ytd\",\"scope\":\"consolidated\",\"unit\":\"USD\",\"facts\":[{\"metric\":\"revenue\",\"value\":\"27083000000\",\"filed\":\"2026-10-22\"},{\"metric\":\"operating_income\",\"value\":\"705000000\",\"filed\":\"2026-10-22\"},{\"metric\":\"net_income\",\"value\":\"-413000000\",\"filed\":\"2026-10-22\"},{\"metric\":\"operating_cashflow\",\"value\":\"13097000000\",\"filed\":\"2026-10-22\"},{\"metric\":\"ppe_purchases\",\"value\":\"48069000000\",\"filed\":\"2026-10-22\"}],\"note\":\"공식 API 값을 코드로 재배열; 원자료의 공시일·계정·출처를 별도 보존. 빈 계정은 0이 아님.\"}",
+      "observed_at": "2026-10-22T00:00:00+00:00",
+      "retrieved_at": "2026-11-16T09:15:27.821893+00:00",
+      "kind": "financial_summary",
+      "symbols": [
+        "SPCX"
+      ],
+      "primary": false,
+      "period_end": "2026-09-30",
+      "period_start": "2026-01-01",
+      "basis": "ytd",
+      "input_evidence_ids": [
+        "Edb8bb5240f71",
+        "Eb94c519c0355",
+        "E7f8cf0cf12e6"
+      ],
+      "content_scope": "공식 재무수치 재배열; 원자료 API 계정·기간을 별도 보존"
+    },
+    {
+      "id": "Eeb1cf34973eb",
+      "provider": "EQUITY LENS · Decimal 계산",
+      "title": "005930 매출 전년 동기 대비 증감률 2026-06-30 quarter",
+      "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260814003699",
+      "content": "{\"name\":\"revenue_yoy\",\"label\":\"매출 전년 동기 대비 증감률\",\"value\":\"130.00\",\"unit\":\"%\",\"start\":\"2026-04-01\",\"end\":\"2026-06-30\",\"basis\":\"quarter\",\"scope\":\"CFS\",\"formula\":\"(current_revenue/prior_revenue-1)*100\",\"inputs\":[{\"metric\":\"revenue\",\"value\":\"171499470000000\",\"unit\":\"KRW\",\"start\":\"2026-04-01\",\"end\":\"2026-06-30\",\"basis\":\"quarter\",\"scope\":\"CFS\",\"tag\":\"ifrs-full_Revenue\",\"evidence_id\":\"E4121f02f8122\"},{\"metric\":\"revenue\",\"value\":\"74566317000000\",\"unit\":\"KRW\",\"start\":\"2025-04-01\",\"end\":\"2025-06-30\",\"basis\":\"quarter\",\"scope\":\"CFS\",\"tag\":\"ifrs-full_Revenue\",\"evidence_id\":\"E5bcd1efe2f00\"}]}",
+      "observed_at": "2026-08-14T00:00:00+00:00",
+      "retrieved_at": "2026-11-16T09:15:07.060307+00:00",
+      "kind": "calculation",
+      "symbols": [
+        "005930"
+      ],
+      "primary": false,
+      "content_scope": "원자료를 코드로 계산; 공식기관 발표 지표가 아님",
+      "period_end": "2026-06-30",
+      "input_evidence_ids": [
+        "E4121f02f8122",
+        "E5bcd1efe2f00"
+      ]
+    },
+    {
+      "id": "E73bef86d8f62",
+      "provider": "EQUITY LENS · 공식 재무 재구성",
+      "title": "005930 최신 quarter 재무 묶음 1",
+      "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260814003699",
+      "content": "{\"symbol\":\"005930\",\"start\":\"2026-04-01\",\"end\":\"2026-06-30\",\"basis\":\"quarter\",\"scope\":\"CFS\",\"unit\":\"KRW\",\"facts\":[{\"metric\":\"revenue\",\"value\":\"171499470000000\",\"filed\":\"2026-08-14\"},{\"metric\":\"operating_income\",\"value\":\"89492412000000\",\"filed\":\"2026-08-14\"},{\"metric\":\"net_income\",\"value\":\"71624461000000\",\"filed\":\"2026-08-14\"},{\"metric\":\"gross_profit\",\"value\":\"119300711000000\",\"filed\":\"2026-08-14\"}],\"note\":\"공식 API 값을 코드로 재배열; 원자료의 공시일·계정·출처를 별도 보존. 빈 계정은 0이 아님.\"}",
+      "observed_at": "2026-08-14T00:00:00+00:00",
+      "retrieved_at": "2026-11-16T09:15:07.061130+00:00",
+      "kind": "financial_summary",
+      "symbols": [
+        "005930"
+      ],
+      "primary": false,
+      "period_end": "2026-06-30",
+      "period_start": "2026-04-01",
+      "basis": "quarter",
+      "input_evidence_ids": [
+        "E4121f02f8122",
+        "E92a2593e7c25"
+      ],
+      "content_scope": "공식 재무수치 재배열; 원자료 API 계정·기간을 별도 보존"
+    },
+    {
+      "id": "Ed3baf026cbff",
+      "provider": "EQUITY LENS · 공식 재무 재구성",
+      "title": "000660 최신 instant 재무 묶음 1",
+      "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260814003509",
+      "content": "{\"symbol\":\"000660\",\"start\":\"\",\"end\":\"2026-06-30\",\"basis\":\"instant\",\"scope\":\"CFS\",\"unit\":\"KRW\",\"facts\":[{\"metric\":\"cash\",\"value\":\"26835986000000\",\"filed\":\"2026-08-14\"},{\"metric\":\"assets\",\"value\":\"348862214000000\",\"filed\":\"2026-08-14\"},{\"metric\":\"liabilities\",\"value\":\"86168986000000\",\"filed\":\"2026-08-14\"},{\"metric\":\"equity\",\"value\":\"262693228000000\",\"filed\":\"2026-08-14\"},{\"metric\":\"current_assets\",\"value\":\"156155954000000\",\"filed\":\"2026-08-14\"},{\"metric\":\"current_liabilities\",\"value\":\"60257051000000\",\"filed\":\"2026-08-14\"}],\"note\":\"공식 API 값을 코드로 재배열; 원자료의 공시일·계정·출처를 별도 보존. 빈 계정은 0이 아님.\"}",
+      "observed_at": "2026-08-14T00:00:00+00:00",
+      "retrieved_at": "2026-11-16T09:15:23.006061+00:00",
+      "kind": "financial_summary",
+      "symbols": [
+        "000660"
+      ],
+      "primary": false,
+      "period_end": "2026-06-30",
+      "period_start": "",
+      "basis": "instant",
+      "input_evidence_ids": [
+        "E98afed0c2d04",
+        "Eeb5c6d8bcfe3",
+        "Ea3430d11870f"
+      ],
+      "content_scope": "공식 재무수치 재배열; 원자료 API 계정·기간을 별도 보존"
+    },
+    {
+      "id": "E664b1cda306a",
+      "provider": "EQUITY LENS · 공식 재무 재구성",
+      "title": "000660 최신 instant 재무 묶음 2",
+      "url": "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20260814003509",
+      "content": "{\"symbol\":\"000660\",\"start\":\"\",\"end\":\"2026-06-30\",\"basis\":\"instant\",\"scope\":\"CFS\",\"unit\":\"KRW\",\"facts\":[{\"metric\":\"inventory\",\"value\":\"17985706000000\",\"filed\":\"2026-08-14\"}],\"note\":\"공식 API 값을 코드로 재배열; 원자료의 공시일·계정·출처를 별도 보존. 빈 계정은 0이 아님.\"}",
+      "observed_at": "2026-08-14T00:00:00+00:00",
+      "retrieved_at": "2026-11-16T09:15:23.006083+00:00",
+      "kind": "financial_summary",
+      "symbols": [
+        "000660"
+      ],
+      "primary": false,
+      "period_end": "2026-06-30",
+      "period_start": "",
+      "basis": "instant",
+      "input_evidence_ids": [
+        "E388fc67fb52b"
+      ],
+      "content_scope": "공식 재무수치 재배열; 원자료 API 계정·기간을 별도 보존"
+    },
+    {
+      "id": "Ec040a46d2ea5",
+      "provider": "SEC",
+      "title": "SCHD SCHD SEC 요약 투자설명서 · fund_objective · 문자 1172",
+      "url": "https://www.sec.gov/Archives/edgar/data/1454889/000110465926020681/tm266454-15_497k.htm",
+      "content": "The fund’s goal is to track as closely as possible, before fees and expenses, the total return of the Dow Jones U.S. Dividend 100TM Index.",
+      "observed_at": "2026-02-27T00:00:00+00:00",
+      "retrieved_at": "2026-11-16T09:15:31.274539+00:00",
+      "kind": "filing_excerpt",
+      "symbols": [
+        "SCHD"
+      ],
+      "primary": true,
+      "content_scope": "공시/공식문서 본문 일부 발췌; 전체 문서 검토 아님; 표 문맥 누락 가능; 대체 투자설명서 기준일 2026-02-27; 현재 편입비중 자료가 아님",
+      "document_sha256": "9a99adbf441037be74ad9cd5b4e300dbfa4b05ce90e30bfd45a0ebdbd226fcd9",
+      "excerpt_start": 1172,
+      "excerpt_end": 1310,
+      "event_key": "SEC-DOC:https://www.sec.gov/Archives/edgar/data/1454889/000110465926020681/tm266454-15_497k.htm",
+      "document_date": "2026-02-27"
+    },
+    {
+      "id": "E331d8544f91b",
+      "provider": "SEC",
+      "title": "SCHD SCHD SEC 요약 투자설명서 · fund_risk · 문자 7546",
+      "url": "https://www.sec.gov/Archives/edgar/data/1454889/000110465926020681/tm266454-15_497k.htm",
+      "content": "The fund is subject to risks, any of which could cause an investor to lose money. The fund’s principal risks include:",
+      "observed_at": "2026-02-27T00:00:00+00:00",
+      "retrieved_at": "2026-11-16T09:15:31.281860+00:00",
+      "kind": "filing_excerpt",
+      "symbols": [
+        "SCHD"
+      ],
+      "primary": true,
+      "content_scope": "공시/공식문서 본문 일부 발췌; 전체 문서 검토 아님; 표 문맥 누락 가능; 대체 투자설명서 기준일 2026-02-27; 현재 편입비중 자료가 아님",
+      "document_sha256": "9a99adbf441037be74ad9cd5b4e300dbfa4b05ce90e30bfd45a0ebdbd226fcd9",
+      "excerpt_start": 7546,
+      "excerpt_end": 7663,
+      "event_key": "SEC-DOC:https://www.sec.gov/Archives/edgar/data/1454889/000110465926020681/tm266454-15_497k.htm",
+      "document_date": "2026-02-27"
+    },
+    {
+      "id": "E64e95527056f",
+      "provider": "SEC",
+      "title": "URA URA SEC 요약 투자설명서 · fund_risk · 문자 8134",
+      "url": "https://www.sec.gov/Archives/edgar/data/1432353/000143235326000203/a497kuranium.htm",
+      "content": "The Fund concentrates its investments (i.e., holds 25% or more of its total assets) in a particular industry or group of industries to approximately the same extent that the Underlying Index is concentrated. As of December 31, 2025, the Underlying Index was concentrated in the oil, gas and consumable fuels industry and had significant exposure to the energy sector. The Fund is classified as “non-diversified,” which means it may invest a larger percentage of its assets in a smaller number of issuers than a diversified fund.",
+      "observed_at": "2026-02-27T00:00:00+00:00",
+      "retrieved_at": "2026-11-16T09:15:32.452491+00:00",
+      "kind": "filing_excerpt",
+      "symbols": [
+        "URA"
+      ],
+      "primary": true,
+      "content_scope": "공시/공식문서 본문 일부 발췌; 전체 문서 검토 아님; 표 문맥 누락 가능; 대체 투자설명서 기준일 2026-03-01; 현재 편입비중 자료가 아님",
+      "document_sha256": "ea44a85bb89ba8762715198c00cee9a4d6e1b3e83556aff92e9b3c5c02a7df49",
+      "excerpt_start": 8134,
+      "excerpt_end": 8662,
+      "event_key": "SEC-DOC:https://www.sec.gov/Archives/edgar/data/1432353/000143235326000203/a497kuranium.htm",
+      "document_date": "2026-03-01"
+    },
+    {
+      "id": "E676b30df2520",
+      "provider": "SEC",
+      "title": "URA URA SEC 요약 투자설명서 · context · 문자 962",
+      "url": "https://www.sec.gov/Archives/edgar/data/1432353/000143235326000203/a497kuranium.htm",
+      "content": "The Global X Uranium ETF (the \"Fund\") seeks to provide investment results that correspond generally to the price and yield performance, before fees and expenses, of the Solactive Global Uranium & Nuclear Components Total Return Index (the \"Underlying Index\").",
+      "observed_at": "2026-02-27T00:00:00+00:00",
+      "retrieved_at": "2026-11-16T09:15:32.452581+00:00",
+      "kind": "filing_excerpt",
+      "symbols": [
+        "URA"
+      ],
+      "primary": true,
+      "content_scope": "공시/공식문서 본문 일부 발췌; 전체 문서 검토 아님; 표 문맥 누락 가능; 대체 투자설명서 기준일 2026-03-01; 현재 편입비중 자료가 아님",
+      "document_sha256": "ea44a85bb89ba8762715198c00cee9a4d6e1b3e83556aff92e9b3c5c02a7df49",
+      "excerpt_start": 962,
+      "excerpt_end": 1221,
+      "event_key": "SEC-DOC:https://www.sec.gov/Archives/edgar/data/1432353/000143235326000203/a497kuranium.htm",
+      "document_date": "2026-03-01"
+    },
+    {
+      "id": "E12bb5754ffc5",
+      "provider": "FRED",
+      "title": "Federal Funds Effective Rate",
+      "url": "https://fred.stlouisfed.org/series/FEDFUNDS",
+      "content": "{\"series_id\": \"FEDFUNDS\", \"canonical_label_ko\": \"미국 연방기금 실효금리(월평균)\", \"units\": \"Percent\", \"frequency\": \"Monthly\", \"seasonal_adjustment\": \"Not Seasonally Adjusted\", \"last_updated\": \"2026-11-02 15:16:50-06\", \"observations\": [{\"realtime_start\": \"2026-11-02\", \"realtime_end\": \"2026-11-02\", \"date\": \"2026-10-01\", \"value\": \"3.88\"}, {\"realtime_start\": \"2026-11-02\", \"realtime_end\": \"2026-11-02\", \"date\": \"2026-09-01\", \"value\": \"3.75\"}, {\"realtime_start\": \"2026-11-02\", \"realtime_end\": \"2026-11-02\", \"date\": \"2026-08-01\", \"value\": \"3.63\"}], \"code_calculations\": [{\"name\": \"직전 유효 관측 대비 수준 차이(원 단위)\", \"value\": \"0.13\", \"periods\": [\"2026-10-01\", \"2026-09-01\"]}], \"note\": \"date는 지표 대상 기간입니다. 발표 시각·컨센서스가 아닙니다. 수정치가 포함될 수 있습니다.\"}",
+      "observed_at": null,
+      "retrieved_at": "2026-11-16T09:14:52.874635+00:00",
+      "kind": "indicator",
+      "observation_period": "2026-10-01",
+      "content_scope": "공식 시계열 최신 조회; 과거 빈티지 아님"
+    },
+    {
+      "id": "E633e6a3a7691",
+      "provider": "FRED",
+      "title": "Market Yield on U.S. Treasury Securities at 10-Year Constant Maturity, Quoted on an Investment Basis",
+      "url": "https://fred.stlouisfed.org/series/DGS10",
+      "content": "{\"series_id\": \"DGS10\", \"canonical_label_ko\": \"미국 10년물 국채금리\", \"units\": \"Percent\", \"frequency\": \"Daily\", \"seasonal_adjustment\": \"Not Seasonally Adjusted\", \"last_updated\": \"2026-11-13 15:16:47-06\", \"observations\": [{\"realtime_start\": \"2026-11-13\", \"realtime_end\": \"2026-11-13\", \"date\": \"2026-11-12\", \"value\": \"5.1\"}, {\"realtime_start\": \"2026-11-13\", \"realtime_end\": \"2026-11-13\", \"date\": \"2026-11-10\", \"value\": \"4.98\"}, {\"realtime_start\": \"2026-11-13\", \"realtime_end\": \"2026-11-13\", \"date\": \"2026-11-09\", \"value\": \"4.88\"}], \"code_calculations\": [{\"name\": \"직전 유효 관측 대비 수준 차이(원 단위)\", \"value\": \"0.12\", \"periods\": [\"2026-11-12\", \"2026-11-10\"]}], \"note\": \"date는 지표 대상 기간입니다. 발표 시각·컨센서스가 아닙니다. 수정치가 포함될 수 있습니다.\"}",
+      "observed_at": null,
+      "retrieved_at": "2026-11-16T09:14:52.905116+00:00",
+      "kind": "indicator",
+      "observation_period": "2026-11-12",
+      "content_scope": "공식 시계열 최신 조회; 과거 빈티지 아님"
+    }
+  ]
+}

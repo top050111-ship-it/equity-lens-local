@@ -10,7 +10,8 @@
     "build": "vite build",
     "build:public": "vite build --mode public --outDir dist-public",
     "preview": "vite preview --host 127.0.0.1",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:contracts": "node tests/contracts.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

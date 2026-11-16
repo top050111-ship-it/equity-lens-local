@@ -127,6 +127,12 @@ def yahoo_symbol(position, overrides=None):
 
 def value_snapshot(snapshot):
     result = copy.deepcopy(snapshot)
+    if not stamp(result.get('as_of')):raise ValueError('invalid holdings timestamp')
+    rows=result.get('positions')
+    if not isinstance(rows,list) or any(not isinstance(p,dict) for p in rows):raise ValueError('invalid positions')
+    symbols=[p.get('symbol') for p in rows]
+    if any(not isinstance(s,str) or not s for s in symbols) or len(set(symbols))!=len(symbols):
+        raise ValueError('duplicate or missing position symbol')
     warnings = list(result.get('snapshot_warnings', []))
     total = Decimal(0)
     fx = result.get('fx')
@@ -225,23 +231,37 @@ class LiveQuotes:
                             await ws.send('PING')
                             ping_at = time.monotonic()
                         try:
-                            message = json.loads(await asyncio.wait_for(ws.recv(), timeout=2))
+                            frame=await asyncio.wait_for(ws.recv(),timeout=2)
                         except asyncio.TimeoutError:
                             continue
+                        if frame in ('PING',b'PING'):
+                            await ws.send('PONG')
+                            continue
+                        if frame in ('PONG',b'PONG'):continue
+                        try:message=json.loads(frame)
+                        except (ValueError,TypeError):continue
+                        if not isinstance(message,dict):continue
                         if message.get('type') == 'subscriptions':
-                            rejected.update(x['target'] for x in message.get('rejected', []))
+                            denied=message.get('rejected')
+                            denied=denied if isinstance(denied,list) else []
+                            rejected.update(x['target'] for x in denied if isinstance(x,dict) and isinstance(x.get('target'),str))
                             delay = 1
                             with self._lock:
                                 self.status = f"연결됨; 거부된 구독 {len(rejected)}건"
                         elif message.get('type') == 'error':
                             raise NetworkError()
-                        elif message.get('type') == 'message' and message.get('topic', '').startswith('trade:'):
-                            _, market, symbol = message['topic'].split(':', 2)
-                            tick = message['data']
+                        elif message.get('type') == 'message' and isinstance(message.get('topic'),str) and message['topic'].startswith('trade:'):
+                            parts=message['topic'].split(':',2)
+                            if len(parts)!=3:continue
+                            _, market, symbol = parts
+                            tick = message.get('data')
+                            if not isinstance(tick,dict):continue
                             if targets.get(symbol) != market or not stamp(tick.get('timestamp')):
                                 continue
                             expected_currency = 'KRW' if market == 'kr' else 'USD'
-                            if tick.get('currency') != expected_currency or decimal(tick['price']) <= 0:
+                            try:valid_price=decimal(tick.get('price'))>0
+                            except ValueError:valid_price=False
+                            if tick.get('currency') != expected_currency or not valid_price:
                                 continue
                             if (age_seconds(tick['timestamp']) or 0) < -300:
                                 continue
