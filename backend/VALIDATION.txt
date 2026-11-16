@@ -1,0 +1,4 @@
+232 offline tests passed, 0 skipped.
+5 frontend contract checks passed.
+TypeScript and both UI builds passed.
+Actual Qwen3:4b calls and limitations: ../AUDIT_REPORT_KO.md

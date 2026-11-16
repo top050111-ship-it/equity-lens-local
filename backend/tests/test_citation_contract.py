@@ -3,7 +3,7 @@ import copy
 import os
 import unittest
 from unittest.mock import patch
-from agents import (Model, Report, LinkedReport, LinkedFinding, SpanReview, SpanDecision, source_spans,
+from agents import (Model, Report, LinkedReport, SpanReview, source_spans,
                     safe_analyze, review_report, EvidenceReview, ReviewDecision, EvidenceQuote)
 from tests.test_agents_quality import P, M, Stub, report, finding, payload
 
@@ -15,7 +15,7 @@ class CitationContractTests(unittest.TestCase):
 
     def test_selected_original_english_text_is_restored_verbatim(self):
         m=self.model()
-        raw=SpanReview(decisions=[SpanDecision(item_id='F0',supported=True,portfolio_linked=False,
+        raw=SpanReview(decisions=[dict(item_id='F0',supported=True,portfolio_linked=False,
             duplicate_of='',reason='fixture',span_ids=['Q0C'])])
         with patch.object(m,'_generate',return_value=raw) as call:
             out=m.review('macro',{'sources':[P],'items':[{'item_id':'F0'}]})
@@ -28,7 +28,7 @@ class CitationContractTests(unittest.TestCase):
 
     def test_unknown_span_rejected(self):
         m=self.model()
-        raw=SpanReview(decisions=[SpanDecision(item_id='F0',supported=True,portfolio_linked=False,
+        raw=SpanReview(decisions=[dict(item_id='F0',supported=True,portfolio_linked=False,
             duplicate_of='',reason='fixture',span_ids=['NOT_A_SPAN'])])
         with patch.object(m,'_generate',return_value=raw),self.assertRaises(ValueError):
             m.review('macro',{'sources':[P],'items':[{'item_id':'F0'}]})
@@ -41,10 +41,10 @@ class CitationContractTests(unittest.TestCase):
 
     def test_wrong_source_span_still_fails_finding_gate(self):
         m=Stub(report())
-        def review(role,payload):
+        def review(role,bundle):
             return EvidenceReview(decisions=[ReviewDecision(item_id='F0',supported=True,
                 portfolio_linked=False,duplicate_of='',reason='fixture',
-                quotes=[EvidenceQuote(evidence_id=M['id'] or '',field='content',quote=M['content'] or '')])])
+                quotes=[EvidenceQuote(evidence_id=M['id'],field='content',quote=M['content'])])])
         m.review=review
         self.assertEqual(safe_analyze(m,'portfolio',payload())['status'],'failed')
 
@@ -52,7 +52,7 @@ class CitationContractTests(unittest.TestCase):
         item=finding('[ACME] 단기 할인율과 중기 사업 변화의 조건부 연결',kind='scenario').model_dump()
         item.pop('evidence_ids')
         item.update(company_evidence_id=left or P['id'],macro_evidence_id=right or M['id'])
-        return LinkedReport(summary='fixture',findings=[LinkedFinding(**item)],conflicts=[],watchlist=[],limitations=[])
+        return LinkedReport(summary='fixture',findings=[item],conflicts=[],watchlist=[],limitations=[])
 
     def test_synthesis_explicit_pair_becomes_existing_public_report(self):
         m=self.model()

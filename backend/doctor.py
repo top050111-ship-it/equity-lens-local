@@ -16,10 +16,14 @@ ROOT = Path(__file__).resolve().parent
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--tests', action='store_true')
+    parser.add_argument('--model',action='store_true',help='별도로 실제 모델 연결·JSON 형식 확인 (LLM 호출 발생)')
+    parser.add_argument('--output',default=str(ROOT/'diagnostics'))
     args = parser.parse_args()
     failures = []
     required = ['app.py', 'agents.py', 'broker.py', 'holdings_cache.py', 'research_runtime.py',
-                'collectors.py', 'common.py', 'server.py', 'site_worker.py', 'config.json']
+                'collectors.py', 'common.py', 'server.py', 'site_worker.py', 'official_sources.py',
+                'financials.py', 'deep_research.py', 'research_render.py', 'research_tools.py',
+                'model_runtime.py','evidence_grounding.py','diagnostics.py','config.json']
     for name in required:
         path = ROOT / name
         try:
@@ -27,19 +31,23 @@ def main():
             if name.endswith('.py'):
                 ast.parse(text, filename=name)
             else:
-                config = json.loads(text)
-                if config['holdings_refresh_seconds'] < 10 or config['report_interval_seconds'] < 300:
-                    raise ValueError('invalid intervals')
+                from common import load_config
+                load_config(path)
             print('OK', name)
         except Exception as exc:
             failures.append(name)
             print('FAIL', name, type(exc).__name__)
-    for module in ('pydantic', 'fastapi', 'httpx', 'yfinance', 'websockets', 'certifi', 'uvicorn'):
+    for module in ('pydantic', 'fastapi', 'httpx', 'yfinance', 'websockets', 'certifi', 'uvicorn', 'defusedxml'):
         if importlib.util.find_spec(module) is None:
             print('MISSING', module)
             failures.append(module)
         else:
             print('OK dependency', module)
+    if importlib.util.find_spec('pydantic'):
+        import pydantic
+        version=tuple(int(v) for v in pydantic.__version__.split('.')[:2])
+        if not (2,8)<=version<(3,0):
+            failures.append('pydantic version');print('FAIL Pydantic v2.8 이상, v3 미만 필요')
     if (ROOT / '.env').exists():
         try:
             from common import load_env
@@ -56,7 +64,11 @@ def main():
         return 1
     if args.tests:
         sys.stdout.flush()
-        return subprocess.call([sys.executable, '-m', 'unittest', 'discover', '-s', 'tests', '-v'], cwd=ROOT)
+        code=subprocess.call([sys.executable, '-m', 'unittest', 'discover', '-s', 'tests', '-v'], cwd=ROOT)
+        if code:return code
+    if args.model:
+        from diagnostics import probe_model
+        return probe_model(args.output)
     return 0
 
 

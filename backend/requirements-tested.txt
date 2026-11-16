@@ -1,10 +1,11 @@
-# 검증 환경의 직접 의존성 버전 기록; OS별 전체 잠금 파일은 아닙니다.
-pydantic==2.14.0
-yfinance==1.7.0
+# This is the direct-dependency environment used for offline checks, not a full lock file.
+pydantic==2.13.4
+yfinance==1.8.0
 websockets==16.0
-certifi==2026.10.18
-fastapi==0.148.0
-uvicorn==0.54.0
-tzdata==2026.5
+certifi==2026.10.19
+fastapi==0.141.1
+uvicorn==0.52.1
+tzdata==2026.6
 httpx==0.28.1
-starlette==1.9.0
+starlette==1.6.0
+defusedxml==0.7.1

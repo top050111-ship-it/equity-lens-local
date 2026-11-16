@@ -16,7 +16,15 @@ import {demoSnapshot,demoReport} from "@/lib/demo";
 const colors=["#b63445","#243e61","#53799a","#92aebf","#c6d4df","#667085"];
 const roles:Role[]=["portfolio","macro","synthesis"];
 const icons={portfolio:BriefcaseBusiness,macro:Globe2,synthesis:Layers3};
-function saveText(r:ResearchReport,demo:boolean){
+async function saveText(r:ResearchReport,demo:boolean){
+ if(!demo){
+  try {
+   const res=await fetch("/api/report/markdown",{cache:"no-store"});
+   if(!res.ok){const detail=await res.json().catch(()=>({}));throw Error(detail.error||"Markdown 보고서를 불러올 수 없습니다.");}
+   const url=URL.createObjectURL(await res.blob());const a=document.createElement("a");a.href=url;a.download="equity-lens-report.md";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  } catch(e) {toast.error(e instanceof Error?e.message:"저장 실패");}
+  return;
+ }
  const lines=["# Equity Lens · "+(demo?"가상 시연 보고서":"리서치 보고서"),"",`기준: ${r.created_at}`,"",...r.warnings];
  for(const role of roles){const stage=r[role];lines.push("",`## ${labels[role].name} · ${stage.status}`,"",stage.report.summary);for(const f of stage.report.findings)lines.push("",`### ${f.subject}`,f.claim,`분류: ${f.kind} / 근거: ${f.evidence_ids.join(", ")}`,`반대 근거: ${f.counterpoint}`,`재검토 조건: ${f.revisit_when}`);for(const c of stage.report.conflicts)lines.push("",`### ${c.issue}`,`기업: ${c.portfolio_view}`,`거시: ${c.macro_view}`,`평가: ${c.assessment}`);lines.push("","확인 사항",...stage.report.watchlist.map(x=>"- "+x),"","한계",...stage.report.limitations.map(x=>"- "+x));}
  lines.push("","## 출처",...r.sources.map(s=>`- [${s.id}] ${s.title} · ${s.provider}\n  ${s.url}`));

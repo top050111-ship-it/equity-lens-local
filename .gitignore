@@ -21,3 +21,36 @@ __pycache__/
 *.log
 .run.lock
 .DS_Store
+# 개인 설정
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+
+# 가상환경·설치 패키지·캐시
+.venv*/
+venv/
+node_modules/
+__pycache__/
+*.py[cod]
+
+# 생성 데이터·보고서·진단 로그
+/data/
+/backend/data/
+/reports/
+/backend/reports/
+/diagnostics/
+/backend/diagnostics/
+*.log
+
+# 수정 전 백업·중복 파일 보관본
+.selective_fix_backups/
+/backend_duplicate_backup_*/
+/frontend_config_backups/
+*.bak
+*.bak_*
+
+# 중복 복사본 제외
+* 2.*
+* 2

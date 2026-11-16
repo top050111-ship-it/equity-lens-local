@@ -95,7 +95,7 @@ if menu == "시연 콘솔 (리서치)":
                 st.warning("과거 저장 수량으로 분석한 연구 포트폴리오입니다. 현재 계좌 잔고가 아닙니다.")
             st.caption(f"작성 시각: {report_data.get('created_at', '알 수 없음')}")
             
-            tab1, tab2, tab3 = st.tabs(["01 기업·포트폴리오", "02 거시경제", "03 종합 판단"])
+            tab1, tab2, tab3, tab4 = st.tabs(["01 기업·포트폴리오", "02 거시경제", "03 종합 판단", "04 종목별 심층"])
             
             def render_agent_view(agent_key):
                 assert report_data is not None
@@ -131,6 +131,28 @@ if menu == "시연 콘솔 (리서치)":
             with tab1: render_agent_view('portfolio')
             with tab2: render_agent_view('macro')
             with tab3: render_agent_view('synthesis')
+            with tab4:
+                deep = report_data.get('research_v2')
+                if not deep:
+                    st.info('심층 분석 결과가 없는 기존/가상 보고서입니다.')
+                else:
+                    st.caption('공식 자료와 원문 일부에 근거한 자동 생성 초안입니다. 통과율은 정확도 점수가 아닙니다.')
+                    for company in deep.get('companies', []):
+                        st.subheader(company['symbol'])
+                        if company.get('metrics'):
+                            st.dataframe(pd.DataFrame(company['metrics'])[['label', 'start', 'end', 'basis', 'value', 'unit', 'evidence_id']], use_container_width=True)
+                        for item in company.get('insights', []):
+                            st.markdown('#### ' + item['title'])
+                            for label, field in [('관측 사실','observation'), ('해석','interpretation'), ('전달 경로','mechanism'), ('시간축','horizon'), ('반대 설명','countercase'), ('다음 확인','monitor')]:
+                                st.write(label + ': ' + item[field])
+                            st.caption('근거: ' + ', '.join(item['evidence_ids']))
+                        st.dataframe(pd.DataFrame(company.get('coverage', [])), use_container_width=True)
+                        for note in company.get('warnings', []):
+                            st.caption(note)
+                    current_output = Path(st.session_state.get('active_output', str(DATA)))
+                    markdown_file = current_output / 'latest_report.md'
+                    if markdown_file.is_file():
+                        st.download_button('전체 심층 보고서 다운로드', markdown_file.read_text(encoding='utf-8'), file_name='equity_lens_report.md', mime='text/markdown')
 
         with col_news:
             st.markdown("### 뉴스와 근거")

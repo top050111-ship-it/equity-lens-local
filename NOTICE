@@ -13,11 +13,17 @@ License version 3 or later.
 
 See the LICENSE file for the full license terms.
 
-Release: v1.4.0
+Release: v1.5.0
 
-This release adds saved-portfolio research mode, frozen holdings
-snapshots, and improvements to claim deduplication, citation
-validation, and portfolio-linked synthesis.
+This release extends v1.4.0 with DART/SEC-based research,
+period-aware financial normalization and calculations,
+issuer-level analysis and company-macro linkage, bounded
+citation and linkage recovery, expanded diagnostics and
+regression tests, and public-demo build configuration fixes.
+
+Research outputs are automatically generated drafts. Completion
+indicates execution status, not factual accuracy, investment
+suitability, or complete coverage of all research topics.
 
 Release metadata does not change the copyright or license terms
 stated above. Third-party components, models, and data remain

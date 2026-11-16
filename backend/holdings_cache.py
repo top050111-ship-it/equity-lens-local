@@ -216,7 +216,7 @@ class CachedToss(Toss):
                         raise ValueError('missing quote')
                     price = decimal(tick['lastPrice'])
                     at = tick.get('timestamp')
-                    if price < 0 or (at is not None and (stamp(at) is None or (age_seconds(at) or 0) < -300)):
+                    if price <= 0 or stamp(at) is None or (age_seconds(at) or 0) < -300 or tick.get('currency',p['currency'])!=p['currency']:
                         raise ValueError('invalid quote')
                     old, new = stamp(p.get('price_at')), stamp(at)
                     if old and new and new < old:
@@ -229,6 +229,13 @@ class CachedToss(Toss):
                 fx = self.get('/api/v1/exchange-rate', {'baseCurrency': 'USD', 'quoteCurrency': 'KRW'})
                 if not isinstance(fx, dict) or decimal(fx['midRate']) <= 0:
                     raise ValueError('invalid FX')
+                if stamp(fx.get('validUntil')) is None or (age_seconds(fx['validUntil']) or 0)>0:
+                    raise ValueError('expired FX')
+                if fx.get('validFrom') is not None and (stamp(fx['validFrom']) is None or (age_seconds(fx['validFrom']) or 0)<-300):
+                    raise ValueError('invalid FX timestamp')
+                old_at=stamp((snapshot.get('fx') or {}).get('validFrom'))
+                new_at=stamp(fx.get('validFrom'))
+                if old_at and new_at and new_at<old_at:raise ValueError('older FX')
                 snapshot['fx'] = fx
             except Exception as exc:
                 notes.append('토스 환율 갱신 실패 (' + type(exc).__name__ + '); 저장 환율로 계산한 참고치.')

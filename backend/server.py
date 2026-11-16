@@ -29,7 +29,7 @@ DIST = ROOT.parent / 'frontend' / ('dist-public' if MODE == 'public' else 'dist'
 api = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
 job = None
 job_lock = threading.Lock()
-MAX_BYTES = 2_000_000
+MAX_BYTES = 12_000_000
 
 
 def fail(message, code=400):
@@ -122,9 +122,11 @@ def report(raw):
         u=urlsplit(s['url'])
         if u.scheme not in ('http','https') or not u.hostname or u.username or u.password:
             raise ValueError('unsafe source link')
-        sources.append({k:s[k] for k in ('id','provider','title','content','url','kind','observed_at','retrieved_at','quality','content_scope','symbols') if k in s})
+        sources.append({k:s[k] for k in ('id','provider','title','content','url','kind','observed_at','retrieved_at','quality','content_scope','symbols',
+                        'primary','period_start','period_end','basis','event_key','input_evidence_ids',
+                        'document_date','observation_period','unit','scope') if k in s})
     ids={s['id'] for s in sources}
-    if len(ids)!=len(sources) or len(sources)>500:
+    if len(ids)!=len(sources) or len(sources)>3000:
         raise ValueError('source IDs')
     for key in ('portfolio','macro','synthesis'):
         stage=raw[key]
@@ -138,8 +140,14 @@ def report(raw):
         audit = stage.get('quality_audit')
         if isinstance(audit, list) and len(audit) <= 12:
             result[key]['quality_audit'] = audit
-    if result['complete'] and any(result[k]['status']!='ok' for k in ('portfolio','macro','synthesis')):
+    if result['complete'] and any(result[k]['status']!='ok' or not result[k]['report']['findings'] for k in ('portfolio','macro','synthesis')):
         raise ValueError('inconsistent completion')
+    if isinstance(raw.get('research_v2'), dict):
+        from deep_research import validate_deep_result
+        result['research_v2'] = validate_deep_result(raw['research_v2'], ids)
+        if result['complete'] and (not result['research_v2']['companies'] or
+            any(c['status']!='ok' or c.get('macro_status')!='ok' for c in result['research_v2']['companies'])):
+            raise ValueError('inconsistent deep completion')
     result['sources']=sources
     for field in ('portfolio_context', 'model'):
         if isinstance(raw.get(field), dict):
@@ -147,6 +155,8 @@ def report(raw):
             result[field] = {k: raw[field][k] for k in allowed if k in raw[field]}
     if isinstance(raw.get('run_id'), str):
         result['run_id'] = raw['run_id'][:100]
+    if isinstance(raw.get('diagnostics'),dict):
+        result['diagnostics']={k:raw['diagnostics'][k] for k in ('runtime','pipeline_error','model_calls') if k in raw['diagnostics']}
     return result
 
 
@@ -156,21 +166,28 @@ def read_json(path):
     return json.loads(path.read_text(encoding='utf-8'))
 
 
-def current_workspace():
-    sfile=DATA/'latest_portfolio.json'
+def selected_report_file():
     candidates=list((DATA/'reports').glob('*.json'))
     rfile=max(candidates,key=lambda p:p.stat().st_mtime_ns) if candidates else None
     status=DATA/'analysis_status.json'
     if status.exists():
-        name=read_json(status).get('report')
+        value=read_json(status)
+        name=value.get('report') if isinstance(value,dict) else None
         if isinstance(name,str) and Path(name).name==name:
             candidate=DATA/'reports'/Path(name).with_suffix('.json')
-            if candidate.exists():
-                rfile=candidate
+            # An explicit commit pointer must not fall back to another run.
+            if not candidate.exists():raise ValueError('committed report missing')
+            rfile=candidate
     imported=DATA/'imported_report.json'
     if imported.exists() and (rfile is None or imported.stat().st_mtime>rfile.stat().st_mtime):
         rfile=imported
+    return rfile
+
+
+def current_workspace():
+    sfile=DATA/'latest_portfolio.json'
     try:
+        rfile=selected_report_file()
         s=snapshot(read_json(sfile)) if sfile.exists() else None
         r=report(read_json(rfile)) if rfile else None
     except (ValueError, KeyError, TypeError, AttributeError, OSError):
@@ -195,13 +212,29 @@ def workspace():
     return current_workspace()
 
 
+@api.get('/api/report/markdown')
+def detailed_markdown():
+    try:rfile=selected_report_file()
+    except (OSError,ValueError):fail('현재 보고서 저장본을 확인하세요.',409)
+    if rfile is None:
+        legacy=DATA/'latest_report.md'
+        if legacy.is_file():return FileResponse(legacy,media_type='text/markdown; charset=utf-8',filename='equity_lens_report.md')
+        fail('생성된 Markdown 보고서가 없습니다.',404)
+    if rfile.name=='imported_report.json':
+        fail('가져온 JSON에는 연결된 Markdown 파일이 없습니다. 원래 실행의 reports 폴더에서 확인하세요.',409)
+    target=rfile.with_suffix('.md')
+    if not target.is_file():
+        fail('생성된 Markdown 보고서가 없습니다.',404)
+    return FileResponse(target, media_type='text/markdown; charset=utf-8', filename='equity_lens_report.md')
+
+
 @api.post('/api/workspace')
 async def import_workspace(request: Request):
     raw=bytearray()
     async for chunk in request.stream():
         raw.extend(chunk)
         if len(raw)>MAX_BYTES:
-            fail('합계 2MB 이하의 JSON을 선택하세요.',413)
+            fail('합계 12MB 이하의 JSON을 선택하세요.',413)
     try:
         packet=json.loads(raw)
         if not isinstance(packet,dict):

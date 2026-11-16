@@ -8,6 +8,8 @@ import re
 import ssl
 import tempfile
 import shlex
+import math
+from contextlib import contextmanager
 try:
     import certifi
 except ImportError:
@@ -27,7 +29,7 @@ def now():
 
 
 def stamp(value):
-    if value is None:
+    if value is None or isinstance(value, bool):
         return None
     try:
         if isinstance(value, (int, float)):
@@ -76,18 +78,21 @@ def canonical_url(value):
     return urlunsplit((p.scheme, p.netloc, p.path, urlencode(query), ''))
 
 
-def evidence(provider, title, url, content, observed_at=None, kind='news', **extra):
+def evidence(provider, title, url, content, observed_at=None, kind='news', *, structured=False, **extra):
     url = canonical_url(url)
-    identity = json.dumps([url, kind, plain(title, 240), plain(content, 1600), observed_at], ensure_ascii=False, sort_keys=True)
+    body=json.dumps(content,ensure_ascii=False,allow_nan=False) if structured else plain(content,1600)
+    identity = json.dumps([url, kind, plain(title, 240), body, observed_at], ensure_ascii=False, sort_keys=True)
     return dict(id='E' + hashlib.sha256(identity.encode()).hexdigest()[:12],
                 provider=provider, title=plain(title, 240), url=url,
-                content=plain(content, 1600), observed_at=observed_at,
+                content=body, observed_at=observed_at,
                 retrieved_at=now(), kind=kind, **extra)
 
 
 class NetworkError(RuntimeError):
-    def __init__(self, status=0):
+    def __init__(self, status=0, *, detail=None, category=None):
         self.status = status
+        self.detail=detail
+        self.category=category
         super().__init__(f'network request failed (status={status})')
 
 
@@ -96,7 +101,8 @@ class NoRedirect(HTTPRedirectHandler):
         return None
 
 
-def request(url, *, headers=None, body=None, form=False, timeout=25, raw=False, attempts=3):
+def request(url, *, headers=None, body=None, form=False, timeout=25, raw=False, attempts=3,
+            max_bytes=8_000_000, capture_error=False):
     headers = {'User-Agent': 'PersonalStockResearch/0.1', **(headers or {})}
     data = None
     if body is not None:
@@ -114,8 +120,8 @@ def request(url, *, headers=None, body=None, form=False, timeout=25, raw=False, 
         try:
             req = Request(url, data=data, headers=headers)
             with opener.open(req, timeout=timeout) as r:
-                text = r.read(8_000_001)
-                if len(text) > 8_000_000:
+                text = r.read(max_bytes + 1)
+                if len(text) > max_bytes:
                     raise ValueError('response too large')
                 return text if raw else json.loads(text)
         except HTTPError as exc:
@@ -127,10 +133,17 @@ def request(url, *, headers=None, body=None, form=False, timeout=25, raw=False, 
                     delay = float(2 ** attempt)
                 time.sleep(delay)
             else:
-                raise NetworkError(exc.code) from None
-        except (URLError, TimeoutError, OSError):
+                detail=None
+                if capture_error:
+                    try:
+                        problem=json.loads(exc.read(4096))
+                        if isinstance(problem,dict) and isinstance(problem.get('error'),str):detail=problem['error'][:2000]
+                    except (OSError,ValueError,TypeError):pass
+                raise NetworkError(exc.code,detail=detail) from None
+        except (URLError, TimeoutError, OSError) as exc:
             if attempt == attempts - 1:
-                raise NetworkError(0) from None
+                reason=getattr(exc,'reason',exc)
+                raise NetworkError(0,category='timeout' if isinstance(reason,TimeoutError) else 'connection') from None
             time.sleep(2 ** attempt)
 
 
@@ -167,3 +180,45 @@ def load_env(path: Union[str, Path] = '.env'):
         if len(parts) > 1:
             raise ValueError('Quote .env values containing spaces')
         os.environ.setdefault(key.strip(), parts[0] if parts else '')
+
+
+def load_config(path):
+    config=json.loads(Path(path).expanduser().read_text(encoding='utf-8'))
+    if not isinstance(config,dict):raise ValueError('config must be an object')
+    for key,minimum in (('holdings_refresh_seconds',10),('report_interval_seconds',300)):
+        value=config.get(key)
+        if isinstance(value,bool) or not isinstance(value,(int,float)) or not math.isfinite(value) or value<minimum:
+            raise ValueError(key+' is invalid')
+    hours=config.get('news_lookback_hours',48)
+    if isinstance(hours,bool) or not isinstance(hours,(int,float)) or not math.isfinite(hours) or hours<=0:
+        raise ValueError('news_lookback_hours is invalid')
+    config.setdefault('news_lookback_hours',48)
+    for key in ('macro_symbols','fred_series'):
+        values=config.setdefault(key,[])
+        if not isinstance(values,list) or any(not isinstance(v,str) or not v.strip() for v in values):
+            raise ValueError(key+' must be a list of symbols')
+    feeds=config.setdefault('macro_feeds',[])
+    if not isinstance(feeds,list):raise ValueError('macro_feeds must be a list')
+    for feed in feeds:
+        if not isinstance(feed,dict) or not isinstance(feed.get('name'),str):raise ValueError('invalid macro feed')
+        canonical_url(feed.get('url'))
+    for key in ('yahoo_overrides','instruments'):
+        if not isinstance(config.get(key,{}),dict):raise ValueError(key+' must be an object')
+    research=config.get('research',{})
+    if not isinstance(research,dict):raise ValueError('research must be an object')
+    for key in ('evidence_char_budget','macro_char_budget','link_char_budget','sources_per_company'):
+        if key in research and (isinstance(research[key],bool) or not isinstance(research[key],int) or research[key]<=0):
+            raise ValueError('research.'+key+' must be a positive integer')
+    return config
+
+
+@contextmanager
+def output_lock(output):
+    """Serialize writers of the same data directory, including saved-source replay."""
+    import fcntl
+    output=Path(output);output.mkdir(parents=True,exist_ok=True,mode=0o700)
+    with (output/'.run.lock').open('a') as lock:
+        try:fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
+        except BlockingIOError:raise ValueError('같은 출력 폴더에서 다른 분석이 실행 중입니다.') from None
+        try:yield
+        finally:fcntl.flock(lock,fcntl.LOCK_UN)
